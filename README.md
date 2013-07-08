@@ -74,7 +74,7 @@ This file needs to have only one line with two tab separated entries:
 Convert the file to UTF-8 without BOM (eg. using Notepad++) and save. 
 
 A sample line in the "overrideEncoding.txt" would be:
-windows-1253	ΆΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώ
+* windows-1253	ΆΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώ
 
 Note that the order of the given letters would be best to match their appearing order in the ASCII table for the corresponding codepage (here: for greek eg. http://msdn.microsoft.com/en-gb/goglobal/cc305146).
 Also, it is important that this identical string of letters MUST be used to create new (extended) fonts with the fonts' mod tool.
@@ -104,8 +104,8 @@ After pressing the "Calculate"(or "Recalculate") button, if there were no errors
 Using the repacker tool
 ============================================
 Preparatory steps:
-1. Use bgbennyboy's MISE Explorer to extract all files (raw) from the ORIGINAL monkey1.pak or monkey2.pak resource files in a sandbox folder (eg. named "extractedAllOrigWithModifications")
-2. Overwrite any resource files with modified ones as needed.
+* Use bgbennyboy's MISE Explorer to extract all files (raw) from the ORIGINAL monkey1.pak or monkey2.pak resource files in a sandbox folder (eg. named "extractedAllOrigWithModifications")
+* Overwrite any resource files with modified ones as needed.
 
 In order to re-pack the files in the sandbox folder you need to select from the Monkey SE repaker UI:
 * The game name (MI1:SE or MI2:SE) from the dropdown list
