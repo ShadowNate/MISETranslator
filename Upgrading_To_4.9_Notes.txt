@@ -1,0 +1,10 @@
+IMPORTANT NOTICE:
+
+When upgrading to 4.9 from a previous version, make sure to keep your old trampol.sqlite db file, 
+if you already have submitted translation sessions.
+
+You can overwrite the trampol.sqlite in the translator's directory, but it's recommended 
+that this is done when the translator application is not running.
+
+If the translator application can't detect an existing trampol.sqlite db, it will try to copy a clean db from the cleandb folder, 
+in order to continue with the application's execution.

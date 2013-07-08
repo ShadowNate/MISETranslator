@@ -1,0 +1,68 @@
+v4.9
+--------
+- Changed encoding of source file (MISEDialogueTranslate to UTF-8
+- "tryEncoding" var is now retrieved via grabberFromPNG module (first checks in overrideEncoding, falls back to greek by default)
+
+
+v4.8
+--------
+- Added tools menu
+- Integrated fonts mod tool (updated UI)
+- Integrated re-packer tool (updated UI)
+- Early work to allow override of encoding (other languages support) with overrideEncoding.txt file
+- Session encoding and gameid are now stored in sessions.txt (utf-8 without BOM) for font mod tool
+- Session delete implemented for font mod tool
+- Font mod tool now prompts for game selection.
+
+v4.7
+--------
+- Library re-ordering. (MI2:SE) fr.uitext.info . "Treasure - Big Whoop: Unclaimed Bonanza or Myth?", "Quatations - Famous Pirate Quotations", "Recipes, Voodoo - The Joy of Hex", must ALL maintain their IDs!
+- Offer to overwrite identical ranges in fr.uitext.info (MI2:SE)
+
+v4.23
+--------
+-  Bugfix: MI2:SE fr.speech.info line 6385 shows a â (0xE2) for Papier Mache. Probably needs fixin (if we don't completely translate it in greek). Also fixed sequences for classic credits (tm and b(c)  )
+
+v4.22
+--------
+-  Support for unicode letters in file paths. Tested with greek letters. The sqlite db stores in unicode so that helped.
+
+v4.21
+--------
+-  Fixed a nasty Bug. Hitting Load in existing session and YES to the question AND THEN CANCEL, makes buttons disables, and removes the translation file from the top field!
+
+v4.2
+--------
+- Handle ALL pure reads (rb) in memory with buffers. More importantly in open (parseQuoteFile) and load/merge (getQuoteNumberInFile)
+- Check if trampol.sqlite does not exist, then check in "cleandb" folder and IF it is there then copy it in the active dir and open it. Otherwise print messagebox and quit?
+- bugfix. after load the window becomes unfoced and shortcuts don't work before clicking on the window
+- Show Report window (total pending, total marked, total conflicting, total lines, changed lines)
+- Do not merge with another file if lines are conflicting from previous merge
+- Go To next marked (up, down) Ctrl+P. Ctrl_Shift_P
+- Go To next conflicted (up, down) Ctrl+E. Ctrl_Shift_E
+- Go To next changed (up, down) Ctrl+G. Ctrl_Shift_G
+- Go To next unchanged (up, down) Ctrl+U. Ctrl_Shift_U
+- disable new buttons and menus when no active session
+- bugfix: backup was having trouble with unicode encoding of certain file names
+- Do not allow submit if conflicted lines!
+- Set ecnoding text field as read-only (for greek translations we only need it fixed)
+- Changed lines functionality now works!
+- get the text from speech and uiText files for merge !!!
+- Set color for conflicted. Reset it on false, and test precedence over MARKED as Pending
+- Hints load (normal) bug. MI:SE 511 are detected from 517. Load file in session detects all of them (probably)!
+- Add another column for resolving conflicts! Careful with too big lines (because of conlicted quoted concatenation!
+- merge functionlatiy: 	Print warning, markers from the imported file won't be imported (the original markers will be kept)
+						Print report: Imported file contained XX changed quotes. Imported FF quotes, of which CC were merged with existing translation (marked lines) and DD were cleanly imported.
+- Update Tick box for "translated text" by comparing to the original file (upon load, upon save, or button press.
+
+v4.0
+--------
++ MI:SE2 credit files translation is now supported. (may have issues with specific characters - needs testing - reverted change in font mappings because credit files' support does not warrant the trouble and side-effects)
++ ctrl+f shortcut focuses on find textbox
++ F3 key shortcut finds next match.
++ Ability to force load a previous (backuped) target fileand updtae the relevant session with its MD5 or create a new one (fits with multiple sessioons case)
++ More error safe-proofing for loading a backup file (line number check)
++ Somehow within the loadquotes function we should check if the translation file has less or more quotes than the original!
++ import from text should state the number of lines imported (more analytic report
++ submitting with zero lines and nothing opened /imported produces no error message!
++ Fixed enabling disabling session related actions and buttons
