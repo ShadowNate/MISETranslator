@@ -18,7 +18,7 @@ Extract the zip file, or copy its contents to a new folder, and then run the inc
 The following files:
 - MISEDialogTranslateUIWin.ui
 - MISERepackUIWin.ui
-- MISEtranslateUIDec11.ui
+- MISEFontsTranslateUIDlg.ui
 must be in the 'ui' subfolder of the application's folder.
 
 The file:
