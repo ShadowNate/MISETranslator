@@ -19,6 +19,9 @@ The following files:
 - MISEDialogTranslateUIWin.ui
 - MISERepackUIWin.ui
 - MISEtranslateUIDec11.ui
+must be in the 'ui' subfolder of the application's folder.
+
+The file:
 - trampol.sqlite (if you have an existing one with saved sessions, use that one instead of the one that is included in the cleandb subfolder)
 must be with the executable within the same folder, for the application to work as intended.
 

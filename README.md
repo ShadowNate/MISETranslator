@@ -19,6 +19,9 @@ The following files:
 - MISEDialogTranslateUIWin.ui
 - MISERepackUIWin.ui
 - MISEtranslateUIDec11.ui
+must be in the 'ui' subfolder of the application's folder.
+
+The file:
 - trampol.sqlite (if you have an existing one with saved sessions, use that one instead of the one that is included in the cleandb subfolder)
 must be with the executable within the same folder, for the application to work as intended.
 
@@ -28,7 +31,7 @@ Backups - Updating
 Please keep regular backups of the following files:
 - trampol.sqlite (main DB) 
 - any of your active translation files (typically named as XXXX_000x.nnn (eg. speech_0001.info). 
-  For backing up the translation files there's an option inside the GUI (the backup button)
+	For backing up the translation files there's an option inside the GUI (the backup button)
 The trampol.sqlite file is located in the MI:SE Series Translator tool's installation 
 folder. This file contains useful information about previous translation sessions that could be overwritten by 
 an empty trampol.sqlite when you upgrade to a new version (via copy-paste).
