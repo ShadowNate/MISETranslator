@@ -21,6 +21,7 @@ In order to run the modules with Python, you will need:
 
 Use the 32bit versions.
 
+The main module of the source code is MISEDialogTranslate.py. 
 
 
 Installation

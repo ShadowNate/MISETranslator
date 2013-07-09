@@ -1,4 +1,6 @@
 *.py[cod]
+./trampol.sqlite
+*.pfx
 
 # C extensions
 *.so

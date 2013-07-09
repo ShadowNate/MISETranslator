@@ -216,7 +216,8 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 ##        reply = QtGui.QMessageBox.question(self, "Information message", "Do you really want to exit?", QtGui.QMessageBox.No | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
 ##        if reply == QtGui.QMessageBox.Yes:
         self.ui.close()
-#        self.close()
+        if __name__ == '__main__':
+            sys.exit(0)
         return
 
 

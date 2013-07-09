@@ -15,12 +15,13 @@ Any feedback about bugs or improvement suggestions and comments can be sent to c
 Modifying the source code and running with Python 2.7
 ============================================
 In order to run the modules with Python, you will need:
-* Python 2.7 
+* Python 2.7 (tested witn Python 2.7.3 32-bit)
 * Python Library PyQt4 (tested with v4.9.2 but should work with higher too): http://www.riverbankcomputing.co.uk/software/pyqt/download
 * Python Imaging Library (PIL) (tested with v1.1.7): http://www.pythonware.com/products/pil/
 
 Use the 32bit versions.
 
+The main module of the source code is MISEDialogTranslate.py. 
 
 
 Installation
