@@ -12,6 +12,17 @@ Not all functionality is yet implemented or available. Please read the known iss
 Any feedback about bugs or improvement suggestions and comments can be sent to classic.adventures.in.greek@gmail.com 
 
 
+Modifying the source code and running with Python 2.7
+============================================
+In order to run the modules with Python, you will need:
+* Python 2.7 
+* Python Library PyQt4 (tested with v4.9.2 but should work with higher too): http://www.riverbankcomputing.co.uk/software/pyqt/download
+* Python Imaging Library (PIL) (tested with v1.1.7): http://www.pythonware.com/products/pil/
+
+Use the 32bit versions.
+
+
+
 Installation
 ============================================
 Extract the zip file, or copy its contents to a new folder, and then run the included executable (.exe).
@@ -19,10 +30,12 @@ The following files:
 - MISEDialogTranslateUIWin.ui
 - MISERepackUIWin.ui
 - MISEFontsTranslateUIDlg.ui
+
 must be in the 'ui' subfolder of the application's folder.
 
 The file:
 - trampol.sqlite (if you have an existing one with saved sessions, use that one instead of the one that is included in the cleandb subfolder)
+
 must be with the executable within the same folder, for the application to work as intended.
 
 
@@ -31,7 +44,8 @@ Backups - Updating
 Please keep regular backups of the following files:
 - trampol.sqlite (main DB) 
 - any of your active translation files (typically named as XXXX_000x.nnn (eg. speech_0001.info). 
-	For backing up the translation files there's an option inside the GUI (the backup button)
+	
+For backing up the translation files there's an option inside the GUI (the backup button)
 The trampol.sqlite file is located in the MI:SE Series Translator tool's installation 
 folder. This file contains useful information about previous translation sessions that could be overwritten by 
 an empty trampol.sqlite when you upgrade to a new version (via copy-paste).
@@ -52,6 +66,7 @@ Note that the following cards for books:
 - "Treasure - Big Whoop: Unclaimed Bonanza or Myth?", 
 - "Quatations - Famous Pirate Quotations", 
 - "Recipes, Voodoo - The Joy of Hex" 
+
 can't be moved (must maintain their ids, which are identical to their placement in the library). 
 So you will have to come up with some translation tricks to make them fit in the lexical order. 
 Also, note that some of these have "Reference cards" to them, so their translation should be adjusted as well, to keep consistency. 
@@ -71,6 +86,7 @@ In order to override the default encoding (windows-1253 (greek)) you will need a
 This file needs to have only one line with two tab separated entries:
 * encoding (ascii) and 
 * characters-list
+
 Convert the file to UTF-8 without BOM (eg. using Notepad++) and save. 
 
 A sample line in the "overrideEncoding.txt" would be:
