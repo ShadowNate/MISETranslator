@@ -198,13 +198,6 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="8">
-    <widget class="QPushButton" name="submitCharPropertiesBtn">
-     <property name="text">
-      <string>Submit new values</string>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="6">
     <widget class="QLineEdit" name="selectedEncodingTxtBx">
      <property name="sizePolicy">
@@ -849,6 +842,27 @@
      </layout>
     </widget>
    </item>
+   <item row="7" column="6" colspan="2">
+    <widget class="QPushButton" name="submitCharPropertiesBtn">
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <italic>true</italic>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Submit new values</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="8">
+    <widget class="QPushButton" name="previewSentenceBtn">
+     <property name="text">
+      <string>Preview sentence</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="9"/>
@@ -873,7 +887,6 @@
   <tabstop>BkpOrigFilesInGameDirCkBx</tabstop>
   <tabstop>graphicsViewPngFont</tabstop>
   <tabstop>charsInFontFileTblView</tabstop>
-  <tabstop>submitCharPropertiesBtn</tabstop>
  </tabstops>
  <resources>
   <include location="images.qrc"/>

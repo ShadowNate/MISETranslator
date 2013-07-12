@@ -7,10 +7,14 @@
 
 #
 # TODO set tryEncoding ???<-- from langSettings? (no for now it's by overrideEncoding.txt (and settings, actually settings/lastActiveEncoding is more correct and can be used to retrieve the string of chars from the langSettings).
-#                                                   Also present somehow the string of letters.
+# TODO present somehow the string of letters in a new png image (as it would appear in a dialogue in-game, respecting the spacing/kerning/positioning settings.
+#           greek pangram: Ξεσκεπάζω την ψυχοφθόρα βδελυγμία
+#           english pangram: The quick brown fox jumps over the lazy dog
+#           custom phraze (we need to check/preview spacing for punctuation marks, capital letters, special characters etc)
 # TODO button for copy to game dir and keep backups checkbox should implement proper function
 # TODO TEST IF THE CHANGES in the selected game WORK!
-# TODO check on consecutive MI1 sessions (the selected game combo box does not switch value, so the load game id is not called again. Is this a problem, or more efficient?)
+# TODO TEST check on consecutive MI1 sessions (the selected game combo box does not switch value, so the load game id is not called again. Is this a problem, or more efficient?)
+# TODO Ability to replace the entire font file (english fonts too) to make a more consistent font.
 #
 ## TODO when empty sessions.txt, we don't need an empty entry inserted in the combobox - WONTFIX. Let it be, we probably need the currentIndex to be 0 then anyway.
 ## DONE: game id SHOULD BE selected when a NEW session starts.
@@ -48,6 +52,8 @@ except ImportError:
     QString = type("")
 from  grabberFromPNG014 import grabberFromPNG
 
+from MISESentencePreview import MyPreviewSentenceDLGWindow
+
 #from PyQt4.QtGui import QPainter, QColor, QPalette, QWidget
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -75,7 +81,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
     DBFileName = u'trampol.sqlite'
     uiFolderName = u'ui'
     uiFontsToolFileName = u'MISEFontsTranslateUIDlg.ui'
+    uiSentencePreviewFileName = u'sentencePreview.ui'
     DBFileNameAndRelPath = ""
+
+    prevSentenceDLG = None
 
     defGameID = 1 # SomiSE
     MI2GameID = 2
@@ -189,6 +198,8 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         self.ui.parametersSessionDeleteBtn.clicked.connect(self.deleteCurrentSession)
         self.ui.submitCharPropertiesBtn.clicked.connect(self.saveCharPropertiesInFile)
         self.ui.copyToGameDirBtn.clicked.connect(self.copyToGameDir)
+
+        self.ui.previewSentenceBtn.clicked.connect(self.showPreviewSentence) # modal dialogue
 
 
 ##        self.ui.sessionsCmBx.currentIndexChanged.currentIndexChanged.connect(self.loadSelectedSession)
@@ -956,6 +967,25 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         MyMainFontDLGWindow.MESSAGE = "Function not yet implemented!"
         self.informationMessage()
         return
+##
+##
+##
+    def showPreviewSentence(self):
+
+        uiSentencePreviewFilePath = os.path.join(self.relPath, self.uiFolderName, self.uiSentencePreviewFileName)
+        #print uiFontDlgFilePath
+        if not os.access(uiSentencePreviewFilePath, os.F_OK) :
+            print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
+
+        currentFontFile = ''
+
+        self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, currentFontFile)
+
+        ##MyMainFontDLGWindow.MESSAGE = "Function not yet implemented!"
+        ##self.informationMessage()
+        return
+
+
 ##
 ##
 ##
