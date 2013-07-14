@@ -878,6 +878,7 @@ class grabberFromPNG:
         importedNumOfLetters = 0
         errMsg = ""
         errorFound = False
+        im = None
         #
         # CONSTANTS
         #

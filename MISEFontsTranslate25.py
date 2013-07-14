@@ -92,6 +92,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 
     basedir = u"."
     icon = None
+    ui = None
     mysessionsFilename = u"mysessions.txt"
     sessionsList = []
     dirtyBitflag = 0
@@ -121,6 +122,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         #print uiFontDlgFilePath
         if not os.access(uiFontDlgFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Font Tool application. Quiting..." % (self.uiFontsToolFileName)
+            self.tryToCloseWin()
             return
 
         self.ui = uic.loadUi(uiFontDlgFilePath)
@@ -224,13 +226,11 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             self.ui.closingFlag = False
 
     def tryToCloseWin(self):
-##        reply = QtGui.QMessageBox.question(self, "Information message", "Do you really want to exit?", QtGui.QMessageBox.No | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
-##        if reply == QtGui.QMessageBox.Yes:
-        self.ui.close()
+        if self.ui is not None:
+            self.ui.close()
         if __name__ == '__main__':
             sys.exit(0)
         return
-
 
     def fillCmBxWithSupportedGames(self):
         #
@@ -977,9 +977,15 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         if not os.access(uiSentencePreviewFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
 
-        currentFontFile = ''
+        ##currentFontFile = ''
 
-        self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, currentFontFile)
+        origFontFilename =   self.ui.openOrigFontTxtBx.text().strip()
+        imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
+
+        copyFontFileName = self.ui.OutputFontFileTxtBx.text().strip()
+        copyPNGFileName =  self.ui.OutputPngFileTxtBx.text().strip()
+
+        self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
 
         ##MyMainFontDLGWindow.MESSAGE = "Function not yet implemented!"
         ##self.informationMessage()

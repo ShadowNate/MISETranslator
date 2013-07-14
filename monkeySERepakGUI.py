@@ -51,6 +51,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 
     basedir = u"."
     icon = None
+    ui = None
 
     def eventFilter(self, object, event):
         #print "EVENT TYPE: %s VS %s " % (event.__class__.__name__, QtGui.QCloseEvent.__name__)
@@ -75,6 +76,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
         #print uiRepackerToolFilePath
         if not os.access(uiRepackerToolFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Repacker Tool application. Quiting..." % (self.uiRepackerToolFileName)
+            self.tryToCloseWin()
             return
 
         self.ui = uic.loadUi(uiRepackerToolFilePath)
@@ -118,7 +120,10 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
             self.ui.closingFlag = False
 
     def tryToCloseWin(self):
-        self.ui.close()
+        if self.ui is not None:
+            self.ui.close()
+        if __name__ == '__main__':
+            sys.exit(0)
         return
 ##
 ##

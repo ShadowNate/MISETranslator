@@ -320,6 +320,7 @@ class MyMainWindow(QtGui.QMainWindow):
     defGameID = 1 # SomiSE
     basedir = u"."
     icon = None
+    ui = None
     windowFontDLG = None
     #
     # TODO: THESE SHOULD BE parameters for the GUI!!
@@ -333,6 +334,9 @@ class MyMainWindow(QtGui.QMainWindow):
     tryEncoding = localGrabInstance.getTryEncoding()
     activeEnc = tryEncoding
     localGrabInstance = None
+
+
+
 
 
     MESSAGE = "<p>This is a sample info message! " \
@@ -531,10 +535,10 @@ class MyMainWindow(QtGui.QMainWindow):
     #
     ## DONE: the close event should be called when [X] is clicked also!
     def tryToCloseWin(self):
-##        reply = QtGui.QMessageBox.question(self, "Information message", "Do you really want to exit?", QtGui.QMessageBox.No | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
-##        if reply == QtGui.QMessageBox.Yes:
-        self.ui.close()
-#        self.close()
+        if self.ui is not None:
+            self.ui.close()
+        if __name__ == '__main__':
+            sys.exit(0)
         return
 
     # serves the ctrl+f shortcut
@@ -668,7 +672,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
     # TODO: construct a filename (or another filename) for the translation file.
     def calcTranslationFilename(self, nextVersion = False):
-
         return newTranslationFilename
 
     def fillCmBxWithSupportedGames(self):
@@ -2501,10 +2504,12 @@ class MyMainWindow(QtGui.QMainWindow):
     #       EPISHS prin klh8ei ayth h synarthsh PREPEI na klh8ei h remakeCharlistWithNoEscapeSequences()
     #       ALLA PROSOXH: h remakeCharlist den 8a mporei na ksexwrisei metaksy twn ascii ellhnikwn kai twn eidikwn xarakthrwn pou exoun 8esh ascii ellhnikou (px ΞΊ).
     #       Ara prepei PALI na enswmatwsoume th routina edw.
+    # TODO: this method should probably be moved in the grabber module.
+    #
     def makeStringIntoModifiedAsciiCharlistToBeWritten(self, inputStringFromGUI, GrabberForTranslationDicts):
         local_replaceAsciiIndexWithValForTranslation = GrabberForTranslationDicts.replaceAsciiIndexWithValForTranslation.copy()
         translatedTextAsCharsList2 = []
-        # prwta entopise escape sequnces kai allakse tis me placeholder haraktires krtwnbtas th 8esh kai ton antistoixo tous special char (enswmatwsh leitourgias ths synarthshs remakeCharlistWithNoEscapeSequences)
+        # first locate the `escape sequences` and switch them with placeholder characters maintaining their position and the corresponding special char (integration of the function from method remakeCharlistWithNoEscapeSequences)
         remadeQuoteString = inputStringFromGUI
         posOfSpecialChars = []
         listOfSpecialChars = []
@@ -2644,6 +2649,7 @@ class MyMainWindow(QtGui.QMainWindow):
         return "".join(specialCharQuoteList)
 
     #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    # Is now used only for debug purposes!
     #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     def remakeCharlistWithNoEscapeSequences(self, newQuoteString):
         remadeQuoteString = newQuoteString

@@ -7,8 +7,9 @@
 
 
 import re
-
+from struct import *
 import sqlite3
+import Image
 
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
@@ -34,13 +35,24 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
     MESSAGE = "<p>This is a sample info message! "
 
     ##tryEncoding = 'windows-1253'
+    greekEncoding = 'windows-1253'
     localGrabInstance = grabberFromPNG() # just for init purposes and getting the tryEncoding.
     tryEncoding = localGrabInstance.getTryEncoding()
-    ##activeEnc = tryEncoding #unused here
+    activeEnc = tryEncoding #unused here
     localGrabInstance = None
 
     origEncoding = 'windows-1252'
-    myGrabInstance = None
+    localGrabInstance = None
+
+    selOrigFontFile = None
+    selOrigPngFile = None
+    selCopyFontFile = None
+    selCopyPngFile = None
+    # consts
+    ERROR_FONT_FILE_ARGS = -1
+    ORIGINAL_FONT_FILE_ARGS = 0
+    EXTENDED_FONT_FILE_ARGS =  1
+    fontMode = ERROR_FONT_FILE_ARGS
 
     currentPath = u"" # for open or save files
     relPath = u'.'
@@ -51,19 +63,42 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 
     prevSentenceDLG = None
 
+    englishPangramStr = u'The quick brown fox jumps over the lazy dog'
+    # this will be used ONLY IF activeEnc == greekEncoding
+    targetLangPangramStr = u'Τάχιστη αλώπηξ βαφής ψημένη γη, δρασκελίζει υπέρ νωθρού κυνός' # use it only if the default (greek encoding is used) (TODO: otherwise it should use a sentence from the DB or the overrideEncoding.txt file?)
+    indexFromAsciiOrdToPngIndex = []
+    listOfCharPngProperties = []
+
     defGameID = 1 # SomiSE
     MI2GameID = 2
     selGameID = MI2GameID
 
     basedir = u"."
     icon = None
-
-    def __init__(self, pselectedEncoding=None, pselectedGameID=None, pselectedFontFile=None):
+    ui = None
+    def __init__(self, pselectedEncoding=None, pselectedGameID=None, pselectedOrigFontFile=None, pselectedOrigPngFile = None,pselectedExtendedFontFile=None, pselectedExtendedPngFile=None):
         QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
         else:
             self.basedir = os.path.dirname(__file__)
+
+        if pselectedEncoding is None or pselectedGameID is None or \
+         ( (pselectedOrigFontFile is None or pselectedOrigFontFile == '' or pselectedOrigPngFile is None or pselectedOrigPngFile =='') \
+            and \
+            (pselectedExtendedFontFile is None or pselectedExtendedFontFile == '' or pselectedExtendedPngFile is None or pselectedExtendedPngFile =='') ):
+            print "Invalid arguments were given for the initialization of preview Sentence dialogue"
+            self.tryToCloseWin()
+            return
+        else:
+            self.tryEncoding = pselectedEncoding
+            self.selGameID = pselectedGameID
+            self.selOrigFontFile = pselectedOrigFontFile
+            self.selOrigPngFile = pselectedOrigPngFile
+            self.selCopyFontFile = pselectedExtendedFontFile
+            self.selCopyPngFile = pselectedExtendedPngFile
+
+
         self.DBFileNameAndRelPath = os.path.join(self.relPath,self.DBFileName)
 
         # Set up the user interface from Designer.
@@ -71,6 +106,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         #print uiFontDlgFilePath
         if not os.access(uiSentencePreviewFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
+            self.tryToCloseWin()
             return
 
         self.ui = uic.loadUi(uiSentencePreviewFilePath)
@@ -98,8 +134,24 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         self.ui.sentenceViewPngFont.show()
 
         ## Connect up the buttons.
+        self.ui.customTextEdt.setAcceptRichText(False)
         self.ui.previewCustomTextBtn.clicked.connect(self.previewCustomText)
         self.ui.clearCustomTextBtn.clicked.connect(self.clearCustomText)
+
+        self.localGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID)
+        self.activeEnc = self.localGrabInstance.getActiveEncoding()
+
+        self.fontMode = self.getFontModeFromFileParams()
+        if self.fontMode == self.ERROR_FONT_FILE_ARGS:
+            print "Could not detect font file status. Quiting"
+            self.tryToCloseWin()
+            return
+
+        self.getIndexFromAsciiOrdToPngIndex()
+        self.getListOfOutlinesInPng()
+
+
+        self.showDefaultText()
         return
 
 ##    def closeEvent(self, event):
@@ -114,87 +166,160 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 ##            self.ui.closingFlag = False
 
     def tryToCloseWin(self):
-        self.ui.close()
+        if self.ui is not None:
+            self.ui.close()
         if __name__ == '__main__':
             sys.exit(0)
         return
 ##
 ##
+##  Show the englishPangramStr and targetLangPangramStr in the image panel
+    def showDefaultText(self):
+        lettersToPrintLst = []
+        del lettersToPrintLst[:]
+
+        if self.listOfCharPngProperties is None or len(self.listOfCharPngProperties) <=0:
+            print "No items detected as drawn characters!"
+            MyPreviewSentenceDLGWindow.MESSAGE = "No items detected as drawn characters!"
+            self.informationMessage()
+            return
+        #print "Active Encoding: %s. Game mode %d" % (self.activeEnc,self.selGameID)
+
+        stringsList = []
+        del stringsList [:]
+        stringsList.append(self.englishPangramStr)
+        if self.activeEnc == self.greekEncoding:
+            stringsList.append(self.targetLangPangramStr)
+        if self.ui.customTextEdt.toPlainText().strip() != '':
+            stringsList.append(self.ui.customTextEdt.toPlainText().strip() )
+
+        for tokenString in stringsList:
+            myASCIIString = unicode.encode("%s" % tokenString, self.activeEnc)
+            myLstChars = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
+
+            for asciiChar in myLstChars:
+                if asciiChar == '\x00':
+                    #print "EOS"
+                    lettersToPrintLst.append((-1,-1,-1,-1,-1,-1,-1, '\x00')) ## should be used as special case to print new line in the preview screen!
+                else:
+                    if(self.pngIndexOfCharCode(asciiChar) < len(self.listOfCharPngProperties)):
+                        #print (asciiChar, ord(asciiChar), self.pngIndexOfCharCode(asciiChar), self.listOfCharPngProperties[self.pngIndexOfCharCode(asciiChar)] )
+                        lettersToPrintLst.append(self.listOfCharPngProperties[self.pngIndexOfCharCode(asciiChar)])
+                    else:
+                        #print (asciiChar, ord(asciiChar), 0, self.listOfCharPngProperties[0] )
+                        lettersToPrintLst.append(self.listOfCharPngProperties[0] )
+
+        self.printInPreviewScreen(lettersToPrintLst)
+        return
+##
+##
+##
+    def printInPreviewScreen(self, lettersToPrintLst):
+        if self.scene is not None:
+            self.scene.clear()
+
+        lineSpacingInPx = 60 # TODO should be font size dependent
+        currentLineNumber = 1 # multiply by lineSpacing to get baseline (horizontal) for the current printing line
+        startingTopColPerLinePx = 0
+        colTopToContinuePx = startingTopColPerLinePx ## pixels
+        rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
+        ## get from origPNG or copyPNG (depending on detected font mode) the specified letters from the dimension/delimiters in the lettersToPrintLst list param.
+        ## and present them as they should be based on Baseline and spacing/positioning characteristics.
+        pngfile = ''
+        if self.fontMode == self.EXTENDED_FONT_FILE_ARGS:
+            pngfile = self.selCopyPngFile
+        elif self.fontMode == self.ORIGINAL_FONT_FILE_ARGS:
+            pngfile = self.selOrigPngFile
+
+        im = None
+        errorFound = False
+        if os.access(pngfile, os.F_OK) :
+            try:
+                ##print pngfile
+                im = Image.open(pngfile)
+            except:
+                errMsg = "Could not open appropriate png font file!"
+                print "Unexpected error:", sys.exc_info()[0]
+                print errMsg
+                errorFound = True
+        else:
+            errMsg = "Could not access appropriate png font file!"
+            print errMsg
+            errorFound = True
+
+        if not errorFound:
+            ##debug
+            #print pngfile, im.format, "%dx%d" % im.size, im.mode
+            w1, h1 = im.size
+            # we need either a CLEAN tmp BMP file OR an in-mem image!!
+            imPreviewSentence = Image.new(im.mode,(1000, 1000), (0,0,0,0)) # width,height. Should be automatically optimized to (calculated) size of largest sentence!
+
+            for letterToPrintItem in lettersToPrintLst:
+                tmpColStart= letterToPrintItem[0]
+                tmpRowStart  = letterToPrintItem[1]
+                tmpColEnd = letterToPrintItem[2]
+                tmpRowEnd = letterToPrintItem[3]
+                tmpPixelsWithinLetterBoxFromLeftToLetter = letterToPrintItem[4]
+                tmpWidthLetter = letterToPrintItem[5]
+                tmpKerningLetter = letterToPrintItem[6]
+                tmpChar = letterToPrintItem[7]
+
+                if tmpChar == '\x00': #End of String - change line
+                    currentLineNumber +=1
+                    colTopToContinuePx = startingTopColPerLinePx ## pixels
+                    rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
+                else:
+                    # TODO to be moved in grabber module???
+                    colTopToContinuePx += tmpPixelsWithinLetterBoxFromLeftToLetter
+                    ##charSubImage = im.crop((tmpColStart+1, tmpRowStart+1, tmpColEnd+2, tmpRowEnd+2))
+                    charSubImage = im.crop((tmpColStart, tmpRowStart, tmpColEnd+1, tmpRowEnd+1))
+                    #print "lalala"
+                    ##print   charSubImage
+                    charPositionCoords = (colTopToContinuePx,
+                                            rowTopToContinuePx,
+                                            colTopToContinuePx + 1 + tmpColEnd - tmpColStart,
+                                            rowTopToContinuePx + 1 + tmpRowEnd - tmpRowStart)
+
+##                    charPositionCoords = (newLetterLeftCol,
+##                                            newLetterTopRow,
+##                                            newLetterRightCol,
+##                                            newLetterBottRow)
+                    #print tmpChar, (tmpColStart, tmpRowStart, tmpColEnd+1, tmpRowEnd+1), charPositionCoords
+                    imPreviewSentence.paste(charSubImage, charPositionCoords)
+                    colTopToContinuePx += tmpKerningLetter
+                    rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
+
+            imPreviewSentenceData = imPreviewSentence.tostring('raw', 'RGBA')
+            qimagePreviewSentence = QImage(imPreviewSentenceData, imPreviewSentence.size[0], imPreviewSentence.size[1], QImage.Format_ARGB32)
+            self.dasPixMap = QtGui.QPixmap.fromImage(qimagePreviewSentence)
+
+            self.scene.addPixmap(QtGui.QPixmap(self.dasPixMap))
+            self.ui.sentenceViewPngFont.setScene(self.scene)
+            self.ui.sentenceViewPngFont.show()
+
+        return
+
+##
+##
 ##
     def previewCustomText(self):
-        MyPreviewSentenceDLGWindow.MESSAGE = "Function not yet implemented!"
-        self.informationMessage()
+        if self.ui.customTextEdt.toPlainText().strip() == '':
+            return
+        else:
+            self.showDefaultText()
         return
 ##
 ##
 ##
     def clearCustomText(self):
         self.ui.customTextEdt.setText('')
-        self.loadPngInGV()
+        ##self.loadPngInGV()
+        self.showDefaultText()
 ##        MyPreviewSentenceDLGWindow.MESSAGE = "Function not yet implemented!"
 ##        self.informationMessage()
         return
 
 
-##
-##
-##    def drawOutlinesForOriginGraphixView(self):
-##        origFontFilename = self.ui.openOrigFontTxtBx.text().strip()
-##        imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
-##
-##        if  origFontFilename <> "" and imageOriginalPNG <> "":
-##            if self.myGrabInstance is not None:
-##                self.myGrabInstance.setDasOrigFontFilename(origFontFilename)
-##                self.myGrabInstance.setImageOriginalPNG(imageOriginalPNG)
-##                self.myGrabInstance.setGameID(self.selGameID)
-##                self.myGrabInstance.setActiveEncoding(self.tryEncoding)
-##                self.myGrabInstance.calcFromDB() # needed because of potential changes in GameId and Encoding!
-##            else:
-##                self.myGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG)
-##        else:
-##            #print "Bad Arguments for outlining!"
-##            errMsg = "Bad Arguments for outlining!"
-##            MyPreviewSentenceDLGWindow.MESSAGE = errMsg
-##            self.informationMessage()
-##            return
-##
-##        if self.myGrabInstance is not None:
-##            outlinesList = self.myGrabInstance.getLetterOutlines(True)
-##            ##fileName = QString(self.ui.openFileNameTxtBx.text())
-##            fileName = self.ui.openFileNameTxtBx.text()
-##            self.paintOutlines(outlinesList, fileName)
-##        return
-####
-####
-####
-##    def drawOutlinesForCopyinGraphixView(self):
-##        origFontFilename =   self.ui.openOrigFontTxtBx.text().strip()
-##        imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
-##
-##        copyFontFileName = self.ui.OutputFontFileTxtBx.text().strip()
-##        copyPNGFileName =  self.ui.OutputPngFileTxtBx.text().strip()
-##
-##        if  origFontFilename <> "" and  imageOriginalPNG  <> "" and copyFontFileName <> "" and copyPNGFileName <> "":
-##            if self.myGrabInstance is not None:
-##                self.myGrabInstance.setCopyFontFileName(copyFontFileName)
-##                self.myGrabInstance.setCopyPNGFileName(copyPNGFileName)
-##            else:
-##                self.myGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID, origFontFilename,   imageOriginalPNG)
-##                self.myGrabInstance.setCopyFontFileName(copyFontFileName)
-##                self.myGrabInstance.setCopyPNGFileName(copyPNGFileName)
-##        else:
-##            #print "Bad Arguments for outlining!"
-##            errMsg = "Bad Arguments for outlining!"
-##            MyPreviewSentenceDLGWindow.MESSAGE = errMsg
-##            self.informationMessage()
-##            return
-##
-##        if self.myGrabInstance is not None:
-##            outlinesList = self.myGrabInstance.getLetterOutlines(False)
-##            ##fileName = QString(self.ui.OutputPngFileTxtBx.text())
-##            fileName = self.ui.OutputPngFileTxtBx.text()
-##            self.paintOutlines(outlinesList, fileName)
-##        return
 ####
 ####
 ####
@@ -274,8 +399,8 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 ##            self.ui.charsInFontFileTblView.model().clear()
 ##        self.ui.charsInFontFileTblView.clearSpans()
 ##
-##        if self.myGrabInstance is not None:
-##            outlinesList = self.myGrabInstance.getLetterOutlines(False)
+##        if self.localGrabInstance is not None:
+##            outlinesList = self.localGrabInstance.getLetterOutlines(False)
 ##            # create table
 ##            lm = QStandardItemModel(pTotalFontLetters, 8, self)
 ##            lm.setHeaderData(0,Qt.Horizontal, u"Chr")
@@ -289,16 +414,157 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 ##
 ##            for rowi in range(0,pTotalFontLetters):
 ##                index = lm.index(rowi, 0, QModelIndex())
-##                if rowi < self.myGrabInstance.lettersInOriginalFontFile:
+##                if rowi < self.localGrabInstance.lettersInOriginalFontFile:
 ##                    lm.setData(index, unicode(str(outlinesList[rowi][7]),self.origEncoding))
 ##                else:
-##                    lm.setData(index, unicode(str(outlinesList[rowi][7]),self.myGrabInstance.activeEncoding))
+##                    lm.setData(index, unicode(str(outlinesList[rowi][7]),self.localGrabInstance.activeEncoding))
 ##                for columni in range(0,7):
 ##                    index = lm.index(rowi, columni+1, QModelIndex())
 ##                    # tmpRowStart[0], tmpColStart[0], tmpRowEnd[0], tmpColEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0]
-##                    lm.setData(index, unicode(str(outlinesList[rowi][columni]),self.myGrabInstance.activeEncoding))
+##                    lm.setData(index, unicode(str(outlinesList[rowi][columni]),self.localGrabInstance.activeEncoding))
 ##            self.ui.charsInFontFileTblView.setModel(lm)
 ##        return
+##
+##
+##
+    # should not be ran often, since this is not expected to change
+    # -1 error (ERROR_FONT_FILE_ARGS)
+    # 0 original (ORIGINAL_FONT_FILE_ARGS)
+    # 1 extended (EXTENDED_FONT_FILE_ARGS)
+    def getFontModeFromFileParams(self):
+        errorFound = False
+        retVal = self.ERROR_FONT_FILE_ARGS
+        # by priority first get the extended files if available (then fallback to originals)
+        if  self.selCopyFontFile is not None and  self.selCopyFontFile <> ""  and  self.selCopyPngFile  is not None and  self.selCopyPngFile:
+            self.localGrabInstance.setCopyFontFileName(self.selCopyFontFile)
+            self.localGrabInstance.setCopyPNGFileName(self.selCopyPngFile)
+            retVal = self.EXTENDED_FONT_FILE_ARGS
+        elif self.selOrigFontFile is not None and  self.selOrigFontFile <> ""  and  self.selOrigPngFile  is not None and  self.selOrigPngFile:
+            self.localGrabInstance.setDasOrigFontFilename(self.selOrigFontFile)
+            self.localGrabInstance.setImageOriginalPNG(self.selOrigPngFile)
+            retVal = self.ORIGINAL_FONT_FILE_ARGS
+        else:
+            errorFound = True
+            errMsg = "No valid file for characters drawing!"
+            MyMainFontDLGWindow.MESSAGE = errMsg
+            self.informationMessage()
+            retVal = self.ERROR_FONT_FILE_ARGS
+        return retVal
+
+    # should not be ran often, since this is not expected to change
+    def getListOfOutlinesInPng(self):
+        del self.listOfCharPngProperties[:]
+        if self.fontMode == self.EXTENDED_FONT_FILE_ARGS:
+            self.listOfCharPngProperties = self.localGrabInstance.getLetterOutlines(False)
+        elif self.fontMode == self.ORIGINAL_FONT_FILE_ARGS:
+            self.listOfCharPngProperties = self.localGrabInstance.getLetterOutlines(True)
+        return
+##
+##
+##
+    # should not be ran often, since this is not expected to change
+    def getIndexFromAsciiOrdToPngIndex(self):
+        if self.fontMode == self.EXTENDED_FONT_FILE_ARGS:
+            fontfile = self.selCopyFontFile
+        elif self.fontMode == self.ORIGINAL_FONT_FILE_ARGS:
+            fontfile = self.selOrigFontFile
+        # start from position 0x1a and read 256 words (2-bytes). (Sanity Check 0x20 char should be the space char)
+        del self.indexFromAsciiOrdToPngIndex[:]
+        retVal = None
+        startPosOfAsciiSlotsTable = 0x1a
+        if os.access(fontfile, os.F_OK) :
+            try:
+                openedFontFile = open(fontfile, 'rb')
+                openedFontFile.seek(startPosOfAsciiSlotsTable)
+                for asciiOrd in range(0,256):
+                    tmpIntReadTuple = unpack('h',openedFontFile.read(2))    # unpack always returns a tuple
+                    self.indexFromAsciiOrdToPngIndex.append(tmpIntReadTuple[0])
+                openedFontFile.close()
+                retVal = self.indexFromAsciiOrdToPngIndex
+                ##print "########################\n########################\n########################"
+                ##print retVal
+                ##print "########################\n########################\n########################"
+                return retVal
+            except:
+                print "Unexpected error:", sys.exc_info()[0]
+                errorFound = True
+                return retVal
+        else:
+            print "Font file not found!"
+            errorFound = True
+            return retVal
+
+
+    # TODO This method could be moved in the grabber module!
+    # This method is similar to pngIndexOfForeignLetter (from grabber module), but this one uses the actual 'char' that is written in the font file.
+    # It will have to search in the given font file to find the png index of the given char code.
+    # should return 0 if error or not Found
+    # The png Index of '0' (first) is the [] (rectangle) character that is displayed when an unknown char is detected in the game text.
+    # The png Index of '1' is the white space ' '
+    def pngIndexOfCharCode(self, pByteCode):
+        unkownCharFoundVal = 0
+        endOfStringNullChar = -1
+        errorFound = False
+        if self.indexFromAsciiOrdToPngIndex is not None and ord(pByteCode) < len(self.indexFromAsciiOrdToPngIndex):
+            ##print ord(pByteCode)
+            if pByteCode == '\x00':
+                return endOfStringNullChar
+            else:
+                return self.indexFromAsciiOrdToPngIndex[ord(pByteCode)]
+        else:
+            errorFound = True
+        if errorFound:
+            return unkownCharFoundVal
+
+
+
+    #
+    # This method is copied from the MISEDialogTranslate module.
+    # TODO It should probably be unified and moved in the grabber module!
+    #
+    def makeStringIntoModifiedAsciiCharlistToBeWritten(self, inputStringFromGUI, GrabberForTranslationDicts):
+        local_replaceAsciiIndexWithValForTranslation = GrabberForTranslationDicts.replaceAsciiIndexWithValForTranslation.copy()
+        translatedTextAsCharsList2 = []
+        # first locate the `escape sequences` and switch them with placeholder characters maintaining their position and the corresponding special char (integration of the function from method remakeCharlistWithNoEscapeSequences)
+        remadeQuoteString = inputStringFromGUI
+        posOfSpecialChars = []
+        listOfSpecialChars = []
+        remadeCharList = []
+
+        atLeastOneSpecialCharWasDetected = False
+        while not ( re.search("0x[0-9A-F][0-9A-F]", remadeQuoteString)) == None:
+            atLeastOneSpecialCharWasDetected = True
+            aMatchObj =  re.search("0x[0-9A-F][0-9A-F]", remadeQuoteString)
+            posOfSpecialChars.append(aMatchObj.start())
+            listOfSpecialChars.append(pack('B',int(remadeQuoteString[aMatchObj.start():aMatchObj.end()], 16)))
+            remadeQuoteString = remadeQuoteString[:aMatchObj.start()] + "_" + remadeQuoteString[aMatchObj.end():]  # _ is a place holder and will be replaced in the Remade charList!
+
+        #paremboli routinas pou metafrazei tous ellhnikous xarakthres se proper hex values to be written. PREPEI NA APOFYGEI THN APOPEIRA METAFRASHS TWN PLACEHOLDER (kalou kakou
+        # ta kanw skip ta '_' ekei pou ta exw markarei, an kai den anhkoun sto translation table)
+        translatedTextAsCharsList2 = list(remadeQuoteString)
+        for itmp in range(0,len(translatedTextAsCharsList2)):
+            if not itmp in posOfSpecialChars:
+                if translatedTextAsCharsList2[itmp] in local_replaceAsciiIndexWithValForTranslation:
+                    tmpkey = translatedTextAsCharsList2[itmp]
+                    translatedTextAsCharsList2[itmp] = pack('B', local_replaceAsciiIndexWithValForTranslation[tmpkey])
+                else:
+                    translatedTextAsCharsList2[itmp] = chr(ord(translatedTextAsCharsList2[itmp]))
+
+        # epistrofi sth routina pou bazei tous pragmatika special xarakthres pali sto string
+        if atLeastOneSpecialCharWasDetected:
+    #        print "listOfSpecialChars %s" % listOfSpecialChars
+    #        print "listOfpos %s" % posOfSpecialChars
+    #            remadeCharList = list(remadeQuoteString)
+            for littleI in range(0, len(posOfSpecialChars)):
+                translatedTextAsCharsList2[posOfSpecialChars[littleI]] = listOfSpecialChars[littleI]
+    #        print "remadeCharList %s" % remadeCharList
+    #            translatedTextAsCharsList2 = remadeCharList
+        translatedTextAsCharsList2.append('\x00')
+        ##print "START OF translatedTextAsCharsList2: "
+        ##print translatedTextAsCharsList2
+        ##print "END OF translatedTextAsCharsList2"
+        return translatedTextAsCharsList2
+
 
 ##
 ##
@@ -368,6 +634,13 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 ##
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    window = MyPreviewSentenceDLGWindow('windows-1253', 1)
+    fontExtendedfileRelPath= os.path.join(u'.', u'test', u'MISE_MinisterT_b_32-orig_1.font')
+    pngExtendedfileRelPath= os.path.join(u'.', u'test', u'MISE_MinisterT_b_32-origExpanded.png')
+    # origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
+    origFontFilename = None
+    imageOriginalPNG = None
+    copyFontFileName = fontExtendedfileRelPath
+    copyPNGFileName = pngExtendedfileRelPath
+    window = MyPreviewSentenceDLGWindow('windows-1253', 1, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
     sys.exit(app.exec_())
 
