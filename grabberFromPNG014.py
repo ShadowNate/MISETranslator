@@ -1069,7 +1069,9 @@ class grabberFromPNG:
                             if newHeight % 2 > 0 : newHeight += 1
 
                             imTargetGameFont = Image.new(imOrigGameFont.mode,(imOrigGameFont.size[0], newHeight), (0,0,0,0))
-                            imTargetGameFont.paste(imOrigGameFont, (0,0, imOrigGameFont.size[0], imOrigGameFont.size[1]))
+                            imageCropped = imOrigGameFont
+                            maskImageCropped = imageCropped
+                            imTargetGameFont.paste(imageCropped, (0,0, imOrigGameFont.size[0], imOrigGameFont.size[1]), maskImageCropped)
                             importedNumOfLetters = 0
                             previousLetterFinishCol = 0
                             # open the copy .font file to  modify it
@@ -1128,12 +1130,16 @@ class grabberFromPNG:
                                                 rowTruncatedPixels = newLetterBottRow - (curHeightForNextAppend + origGameFontDiakenoHeight)
                                                 newLetterBottRow = curHeightForNextAppend + origGameFontDiakenoHeight  # TODO: or is it -1 ?
 
-
-                                            imTargetGameFont.paste(im.crop((c_startCol,c_startRow, c_endCol+1, c_endRow+1 - rowTruncatedPixels)),
+                                            # new: USING mask to maintain transparency when pasting. Is Not very important here (it's more important in previewing sentences with pasted letters.
+                                            #       THIS DOES NOT OCCUR (it works as intended) :: could also make some fringe parts less visible if the mask is set to be the same as the crop) [<- does not occur]
+                                            imageCropped = im.crop((c_startCol,c_startRow, c_endCol+1, c_endRow+1 - rowTruncatedPixels))
+                                            maskImageCropped = imageCropped
+                                            imTargetGameFont.paste(imageCropped,
                                                                             (newLetterLeftCol,
                                                                             newLetterTopRow,
                                                                             newLetterRightCol,
-                                                                            newLetterBottRow))
+                                                                            newLetterBottRow),
+                                                                    maskImageCropped)
                                             importedNumOfLetters += 1
                                             copyFontFile.seek(firstTableLineOffset +  (existingSizeOfTableInOrigImage + importedNumOfLetters -1 )* 16 )     #nea grammi
                                             # # adding +1 in all coords for letter box because there is a +1 difference (png has 0,0 start and .font has 1,1)

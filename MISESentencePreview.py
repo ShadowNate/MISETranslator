@@ -5,6 +5,9 @@
 # classic.adventures.in.greek@gmail.com
 #
 
+#
+# TODO: add selection of background colors (similar to card catalogue, similar to generic MI background -> dark -blue-ish)
+#
 
 import re
 from struct import *
@@ -198,7 +201,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
             myLstChars = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
 
             for asciiChar in myLstChars:
-                if asciiChar == '\x00':
+                if asciiChar == '\x00' or asciiChar == '\x0a':
                     #print "EOS"
                     lettersToPrintLst.append((-1,-1,-1,-1,-1,-1,-1, '\x00')) ## should be used as special case to print new line in the preview screen!
                 else:
@@ -251,9 +254,39 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
             ##debug
             #print pngfile, im.format, "%dx%d" % im.size, im.mode
             w1, h1 = im.size
-            # we need either a CLEAN tmp BMP file OR an in-mem image!!
-            imPreviewSentence = Image.new(im.mode,(1000, 1000), (0,0,0,0)) # width,height. Should be automatically optimized to (calculated) size of largest sentence!
+            # we need  an in-mem image!!
 
+            #pre-process to calculate max width
+            maxWidthPx = 0
+            maxHeightPx = 0
+            for letterToPrintItem in lettersToPrintLst:
+                tmpColStart= letterToPrintItem[0]
+                tmpRowStart  = letterToPrintItem[1]
+                tmpColEnd = letterToPrintItem[2]
+                tmpRowEnd = letterToPrintItem[3]
+                tmpPixelsWithinLetterBoxFromLeftToLetter = letterToPrintItem[4]
+                tmpWidthLetter = letterToPrintItem[5]
+                tmpKerningLetter = letterToPrintItem[6]
+                tmpChar = letterToPrintItem[7]
+
+                if tmpChar == '\x00': #End of String - change line
+                    currentLineNumber +=1
+                    colTopToContinuePx = startingTopColPerLinePx ## pixels
+                    rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
+                    if maxHeightPx < (rowTopToContinuePx + lineSpacingInPx):
+                        maxHeightPx = (rowTopToContinuePx + lineSpacingInPx)
+                else:
+                    colTopToContinuePx += tmpPixelsWithinLetterBoxFromLeftToLetter
+                    colTopToContinuePx += tmpKerningLetter
+                    rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
+                    if maxWidthPx < colTopToContinuePx:
+                        maxWidthPx = colTopToContinuePx
+
+            imPreviewSentence = Image.new(im.mode,(maxWidthPx+10, maxHeightPx+10), (0,0,0,0)) # width,height. Should be automatically optimized to (calculated) size of largest sentence!
+
+            currentLineNumber = 1 # multiply by lineSpacing to get baseline (horizontal) for the current printing line
+            colTopToContinuePx = startingTopColPerLinePx ## pixels
+            rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
             for letterToPrintItem in lettersToPrintLst:
                 tmpColStart= letterToPrintItem[0]
                 tmpRowStart  = letterToPrintItem[1]
@@ -272,20 +305,28 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
                     # TODO to be moved in grabber module???
                     colTopToContinuePx += tmpPixelsWithinLetterBoxFromLeftToLetter
                     ##charSubImage = im.crop((tmpColStart+1, tmpRowStart+1, tmpColEnd+2, tmpRowEnd+2))
-                    charSubImage = im.crop((tmpColStart, tmpRowStart, tmpColEnd+1, tmpRowEnd+1))
-                    #print "lalala"
+                    charSubImage = im.crop((tmpColStart, tmpRowStart, tmpColEnd + 1, tmpRowEnd+1))
+
+                    maskSubImage = charSubImage
+##                    maskW1, maskH1 = maskSubImage.size
+##                    pix = maskSubImage.load()
+##                    # we need to set every non completely transparent pixel of the mask to complete opaque and white.
+##                    for x in range(0, maskW1):
+##                        for y in range(0, maskH1):
+##                            r1,g1,b1,a1 = pix[x, y]
+##                            if a1 != 0: # if not completely transparent
+##                                pix[x, y] = r1, g1, b1, 0xff # set it to completely opaque
+##
+##                    #maskSubImage.putdata(pix) # not needed. The data is altered!
+
                     ##print   charSubImage
                     charPositionCoords = (colTopToContinuePx,
                                             rowTopToContinuePx,
                                             colTopToContinuePx + 1 + tmpColEnd - tmpColStart,
-                                            rowTopToContinuePx + 1 + tmpRowEnd - tmpRowStart)
-
-##                    charPositionCoords = (newLetterLeftCol,
-##                                            newLetterTopRow,
-##                                            newLetterRightCol,
-##                                            newLetterBottRow)
+                                            rowTopToContinuePx + 1 + tmpRowEnd - tmpRowStart )
                     #print tmpChar, (tmpColStart, tmpRowStart, tmpColEnd+1, tmpRowEnd+1), charPositionCoords
-                    imPreviewSentence.paste(charSubImage, charPositionCoords)
+                    # 3rd paste option is a mask to keep the transparency (we use the same image as mask).
+                    imPreviewSentence.paste(charSubImage, charPositionCoords, maskSubImage)
                     colTopToContinuePx += tmpKerningLetter
                     rowTopToContinuePx = (currentLineNumber - 1)*lineSpacingInPx ## pixels
 
@@ -507,7 +548,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         errorFound = False
         if self.indexFromAsciiOrdToPngIndex is not None and ord(pByteCode) < len(self.indexFromAsciiOrdToPngIndex):
             ##print ord(pByteCode)
-            if pByteCode == '\x00':
+            if pByteCode == '\x00' or pByteCode == '\x0a':
                 return endOfStringNullChar
             else:
                 return self.indexFromAsciiOrdToPngIndex[ord(pByteCode)]

@@ -2,6 +2,8 @@
 *.pfx
 /trampol.sqlite
 /test/*
+/mysessions-empty.txt
+/mysessions-filled.txt
 
 # C extensions
 *.so
