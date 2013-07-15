@@ -7,7 +7,7 @@
 
 #
 # TODO: add selection of background colors (similar to card catalogue, similar to generic MI background -> dark -blue-ish)
-#
+# TODO: background bould also be repeated images (??) <- low priority
 
 import re
 from struct import *
@@ -65,6 +65,9 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
     DBFileNameAndRelPath = ""
 
     prevSentenceDLG = None
+    availBackgroundsLst = ( ( "Default Background", (131,166,235) ) ,\
+                            ("Card Catalogue", (219,189,137))  ,\
+                            ("Monkey Night Sky", (57,93,115) ) )
 
     englishPangramStr = u'The quick brown fox jumps over the lazy dog'
     # this will be used ONLY IF activeEnc == greekEncoding
@@ -131,15 +134,26 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 
         self.native = True #can be used to control some native-to-OS or not dialogs being utilised (should be a checkbox)
 
+        self.ui.backgroundSelectionCmbx.addItem(self.availBackgroundsLst[0][0])
+        self.ui.backgroundSelectionCmbx.addItem(self.availBackgroundsLst[1][0])
+        self.ui.backgroundSelectionCmbx.addItem(self.availBackgroundsLst[2][0])
+        self.ui.backgroundSelectionCmbx.setCurrentIndex(0)
+
         self.dasPixMap = None
         self.scene = QtGui.QGraphicsScene()
+        self.sceneBgBrush = QtGui.QBrush()
+        self.sceneBgBrush.setStyle(QtCore.Qt.SolidPattern)
+        #self.sceneBgBrush.setColor(QColor(self.availBackgroundsLst[0][1][0],self.availBackgroundsLst[0][1][1],self.availBackgroundsLst[0][1][2]))
+        #self.scene.setBackgroundBrush(self.sceneBgBrush)
         self.ui.sentenceViewPngFont.setScene(self.scene)
         self.ui.sentenceViewPngFont.show()
+        self.loadSelectedBGFromComboChanged(self.availBackgroundsLst[0][0])
 
         ## Connect up the buttons.
         self.ui.customTextEdt.setAcceptRichText(False)
         self.ui.previewCustomTextBtn.clicked.connect(self.previewCustomText)
         self.ui.clearCustomTextBtn.clicked.connect(self.clearCustomText)
+        QtCore.QObject.connect(self.ui.backgroundSelectionCmbx, QtCore.SIGNAL("currentIndexChanged(const QString)"), self.loadSelectedBGFromComboChanged)
 
         self.localGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID)
         self.activeEnc = self.localGrabInstance.getActiveEncoding()
@@ -173,6 +187,31 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
             self.ui.close()
         if __name__ == '__main__':
             sys.exit(0)
+        return
+
+##
+##
+##
+    def loadSelectedBGFromComboChanged(self, selBgName):
+        #print "lallala"
+        #if self.scene is not None:
+        #    self.scene.clear()
+        #self.scene = QtGui.QGraphicsScene()
+        foundSelBg = False
+        #print selBgName
+        for itemBg in self.availBackgroundsLst:
+            #print itemBg[0]
+            if(itemBg[0] == selBgName):
+                foundSelBg = True
+                break
+        if foundSelBg:
+
+            self.sceneBgBrush = QtGui.QBrush(QColor(itemBg[1][0],itemBg[1][1],itemBg[1][2]))
+            #self.scene.setBackgroundBrush(self.sceneBgBrush)
+            #self.ui.sentenceViewPngFont.setCacheMode(QtGui.QGraphicsView.CacheBackground)
+            #self.ui.sentenceViewPngFont.setScene(self.scene)
+            self.ui.sentenceViewPngFont.setBackgroundBrush(self.sceneBgBrush )
+            self.ui.sentenceViewPngFont.show()
         return
 ##
 ##

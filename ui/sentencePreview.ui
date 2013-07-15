@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>953</width>
-    <height>498</height>
+    <width>935</width>
+    <height>636</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,32 +20,115 @@
    <iconset resource="images.qrc">
     <normaloff>:/icons/iconsimple.ico</normaloff>:/icons/iconsimple.ico</iconset>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" rowspan="2">
-    <widget class="QTextEdit" name="customTextEdt">
-     <property name="whatsThis">
-      <string>Write a custom text to preview how it would appear in-game with the selected font!</string>
+  <layout class="QGridLayout" name="gridLayout_3">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="locale">
-      <locale language="English" country="Ireland"/>
+     <property name="minimumSize">
+      <size>
+       <width>590</width>
+       <height>85</height>
+      </size>
      </property>
+     <property name="title">
+      <string/>
+     </property>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>571</width>
+        <height>54</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0" rowspan="2">
+        <widget class="QTextEdit" name="customTextEdt">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="whatsThis">
+          <string>Write a custom text to preview how it would appear in-game with the selected font!</string>
+         </property>
+         <property name="locale">
+          <locale language="English" country="Ireland"/>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="previewCustomTextBtn">
+         <property name="text">
+          <string>Preview Text</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="clearCustomTextBtn">
+         <property name="text">
+          <string>Clear</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QPushButton" name="previewCustomTextBtn">
-     <property name="text">
-      <string>Preview Text</string>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>85</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>350</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="title">
+      <string/>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="backgroundSelectionCmbx"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Background:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="QPushButton" name="clearCustomTextBtn">
-     <property name="text">
-      <string>Clear</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
+   <item row="1" column="0" colspan="2">
     <widget class="QGraphicsView" name="sentenceViewPngFont">
      <property name="cursor" stdset="0">
       <cursorShape>CrossCursor</cursorShape>
@@ -71,6 +154,9 @@
     </widget>
    </item>
   </layout>
+  <zorder>groupBox_2</zorder>
+  <zorder>groupBox</zorder>
+  <zorder>sentenceViewPngFont</zorder>
  </widget>
  <resources>
   <include location="images.qrc"/>

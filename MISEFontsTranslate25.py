@@ -156,22 +156,34 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             involvedTokensLst =[]
             self.ui.sessionsCmBx.addItem("")
             self.ui.sessionsCmBx.setCurrentIndex(0)
+            linenum = 0
+            errorLine = False
             for readSessLine in linesLst:
-                readSessLine = unicode("%s" % readSessLine, 'utf-8')
-                del involvedTokensLst[:]
-                involvedTokensLst = re.findall("[^\t\n]+",readSessLine )
-                self.ui.sessionsCmBx.addItem(involvedTokensLst[0])
-    ##        self.ui.sessionsCmBx.addItems(involvedTokensLst)
-                # [1]: game id
-                # [2]: encoding
-                # [3]: filename PNG orig
-                # [4]: filename PNG row characters
-                # [5]: filename font orig
-                # [6]: top-top
-                # [7]: left-left
-                # [8]: baselineOffsetSpinBox
-                atmpLst = ( involvedTokensLst[1],  involvedTokensLst[2],  involvedTokensLst[3],  involvedTokensLst[4],  involvedTokensLst[5], involvedTokensLst[6], involvedTokensLst[7], involvedTokensLst[8])
-                self.sessionsList.append((involvedTokensLst[0], atmpLst ))
+                ##print readSessLine
+                linenum+=1
+                errorLine = False
+                try:
+                    readSessLine = unicode("%s" % readSessLine, 'utf-8')
+                except:
+                    errorLine = True
+                    MyMainFontDLGWindow.MESSAGE = "Could not read line %d from sessions file %s! Please check the file encoding (should be UTF-8) and the specific line to resolve the issue." % (linenum,self.mysessionsFilename)
+                    self.informationMessage()
+
+                if not errorLine:
+                    del involvedTokensLst[:]
+                    involvedTokensLst = re.findall("[^\t\n]+",readSessLine )
+                    self.ui.sessionsCmBx.addItem(involvedTokensLst[0])
+        ##        self.ui.sessionsCmBx.addItems(involvedTokensLst)
+                    # [1]: game id
+                    # [2]: encoding
+                    # [3]: filename PNG orig
+                    # [4]: filename PNG row characters
+                    # [5]: filename font orig
+                    # [6]: top-top
+                    # [7]: left-left
+                    # [8]: baselineOffsetSpinBox
+                    atmpLst = ( involvedTokensLst[1],  involvedTokensLst[2],  involvedTokensLst[3],  involvedTokensLst[4],  involvedTokensLst[5], involvedTokensLst[6], involvedTokensLst[7], involvedTokensLst[8])
+                    self.sessionsList.append((involvedTokensLst[0], atmpLst ))
             mysessionsFile.close()
 
         ##

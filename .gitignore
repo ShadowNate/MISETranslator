@@ -2,6 +2,7 @@
 *.pfx
 /trampol.sqlite
 /test/*
+/mysessions.txt
 /mysessions-empty.txt
 /mysessions-filled.txt
 
