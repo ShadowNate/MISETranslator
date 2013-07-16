@@ -117,6 +117,13 @@ Typically, the font tool is used as follows:
 
 After pressing the "Calculate"(or "Recalculate") button, if there were no errors and the process finished successfully, the two remaining text fields ("output png file" and "output font file" ) will indicate the files where the modifications were stored. If everything seems ok in the preview image, you may copy these files in the "fonts" directory of the Monkey Island game to test the results in game.
 
+You can adjust the positioning of a font character within a sentence by explicitly and manually modifying the values in the "Detected Characters" table on the right. Typically, the values that should be modified are the ones in
+the columns Indnt (indent: the margin within a letter box, after which the letter begins. Can be negative), wid (width: the width of the character), kern (kerning: the margin after the end of the character, where the box for the next letter should begin). 
+
+Warning: the explicit manual changes to font letters positioning MUST be saved by clicking on the "Submit new values" button, under the "Detected Characters" table. 
+Warning 2: the explicit manual changes to font letters positioning WILL BE OVERWRITTEN without any prompt, if you click on the "Calculate" or "Recalculate" buttons, because those will recreate the extended font files from scratch. 
+
+
 
 Using the repacker tool
 ============================================
@@ -136,26 +143,30 @@ Keep a backup of the original pak file, just in case.
 
 Known Issues
 ============================================
-- All translation sessions (connections between original files and their respective active translation files) 
+- All dialogue translation sessions (connections between original files and their respective active translation files) 
 	keep absolute paths for the involved files. This means that these sessions won't work
 	if the files are moved or the Translator's installation folder is changed.
-	An new session will start if any of the involved files in an old session has been moved or deleted.
+	A new session will start if any of the involved files in an stored session has been moved or deleted.
 	You can still import text from a previously extracted (to .txt from the menu option) translation.
-	Additionally you can load a previous backup or copy of your translation file into a new session 
-	by using the Load Translation in Session (Ctrl+T shortcut)
+	Additionally, you can load a previous backup or copy of your translation file into a new session 
+	by using the Load Translation in Session (Ctrl+T shortcut).
 - If certain font files are missing for your locale, you may see square symbols instead of your translated text.
-	A separate tool (that could eventually be merged into the Translator) is needed for expanding the font file
-	to include specific locale charsets. This tool is currently not publicly available.
+	The Font Crafting tool (accessible via the Translator's menu "Tools" option) is needed for expanding the font file
+	to include specific locale charsets. This tool includes a preview capability, to demonstrate approximately
+	how the changed fonts will work in sentences in-game (indent, spacing, kerning).
 - The Translator tool will produce translations that will replace the French translation for the games. You'll have to
 	set the game's language to French in order to view your custom translation in-game.
 - Spell-checking has not yet been integrated. You will have to extract the translation to a text file, check it separately 
 	and re-import it.
-- No auto-save feature is implemented. You need to click on the Submit button to save any changes or any imports from extracted files.
+- For the Dialogue Translator no auto-save feature is implemented. You need to click on the Submit button to save any changes or any imports from extracted files.
 - Certain special characters will appear as 0x## (where ## is a hex 2-digit number) within the text. You can remove them if deemed 
 	necessary (usually it is apparent whether the special character can be omitted; most of the special characters that are
 	also in the english translation are to be kept).
 - The extracted text files may include a 0x0A special character in addition to the special characters shown in the tool's GUI.
 	This 0x0A indicates a "new line" within a quote and should NOT be removed from the extracted text file. 
+- For the Font Crafting tool the Calculate and Recalculate both will auto-save the changes (overwritting your previous target copies) 
+	and prompt to overwrite an existing session (if one was active/loaded). Clicking these buttons will also overwrite any explicit manual 
+	changes made in the indent, spacing, kerning of the font characters (via the table on the right).
 
 
 Special Thanks
