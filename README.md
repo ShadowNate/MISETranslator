@@ -1,22 +1,22 @@
 Monkey Island SE Series Translator
 ============================================
-This application was built for the fan-translation of LucasArts' Monkey Island Special Edition Series.
+This application was built for the fan-translation of LucasArts' Monkey Island Special Edition Series
 by the Classic Adventures In Greek team. It's been tested with the Steam versions of SoMI:SE and Monkey Island 2:SE.
-It can be distributed freely.
+It is an open source project.
 
 
 Beta version
 ============================================
 Note that this version of MI:SE Series Translator is considered a beta version and is still under active development.
 Not all functionality is yet implemented or available. Please read the known issues bellow for more details.
-Any feedback about bugs or improvement suggestions and comments can be sent to classic.adventures.in.greek@gmail.com 
+Any feedback about bugs or improvement suggestions and related comments can be sent to classic.adventures.in.greek@gmail.com 
 
 
 Modifying the source code and running with Python 2.7
 ============================================
 In order to run the modules with Python, you will need:
-* Python 2.7 (tested witn Python 2.7.3 32-bit)
-* Python Library PyQt4 (tested with v4.9.2 but should work with higher too): http://www.riverbankcomputing.co.uk/software/pyqt/download
+* Python 2.7 (tested witn Python 2.7.5 32-bit)
+* Python Library PyQt4 (tested with v4.10.2): http://www.riverbankcomputing.co.uk/software/pyqt/download
 * Python Imaging Library (PIL) (tested with v1.1.7): http://www.pythonware.com/products/pil/
 
 Use the 32bit versions.
@@ -173,7 +173,8 @@ Known Issues
 
 Special Thanks
 ============================================
-- bgbennyboy for making available as open-source tools over at Quick And Easy Software (quick.mixnmojo.com)
+- bgbennyboy for making available as open-source tools over at Quick And Easy Software (http://quickandeasysoftware.net/)
   several valuable apps for extracting game resource files and importing images,
-- the guys over at lucasforums scumm subsection for various observations and notes on the format of the games' resource files.
+- The guys over at the "scumm" subsection of  lucasforums (http://www.lucasforums.com/forumdisplay.php?f=363) for various observations and notes on the format of the games' resource files.
+- The guys from the Hungarian Translation team (Kenand, Bela) for providing important info about the re-ordering of the library catalogue in MI2:SE
 - Any beta testers :)
