@@ -29,13 +29,15 @@ from MISEFontsTranslate25 import MyMainFontDLGWindow
 from monkeySERepakGUI import MyMainRepackerDLGWindow
 
 ######
+# TODO: Searching for [~TEMP] in translated text does not match the literal due to using regular expressions.
+# TODO: Export to meta file the pending lines.
+# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
+# TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: export to excel ?
 # TODO: import from excel ?
 # TODO: spell-check (aspell? hunspell?)
 # TODO: goto line shortcut (CTRL+SHIFT+G)???
 # TODO: repacker integration (UI)
-# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
-# TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: Bug: Searching for '.' produces ANY character!
 # TODO: Bug: Searching for greek is always case sensitive
 # TODO: Sorting books (library catalogue cards MI2:SE) uses system locale. It should use a locale associated with the selected encoding!
