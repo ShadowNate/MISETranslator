@@ -6,6 +6,8 @@
 /MISETranslatorSuite/mysessions.txt
 /MISETranslatorSuite/mysessions-empty.txt
 /MISETranslatorSuite/mysessions-filled.txt
+/test
+/test/*
 
 # C extensions
 *.so
