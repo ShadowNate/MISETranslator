@@ -1,10 +1,11 @@
 *.py[cod]
 *.pfx
 /trampol.sqlite
-/test/*
-/mysessions.txt
-/mysessions-empty.txt
-/mysessions-filled.txt
+/MISETranslatorSuite/trampol.sqlite
+/MISETranslatorSuite/test/*
+/MISETranslatorSuite/mysessions.txt
+/MISETranslatorSuite/mysessions-empty.txt
+/MISETranslatorSuite/mysessions-filled.txt
 
 # C extensions
 *.so
