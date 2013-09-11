@@ -557,6 +557,8 @@
     <addaction name="separator"/>
     <addaction name="actionFind_Next_Changed"/>
     <addaction name="actionFind_Previous_Changed"/>
+    <addaction name="separator"/>
+    <addaction name="actionGotoLine"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -697,6 +699,11 @@
   <action name="actionRepacker">
    <property name="text">
     <string>Repacker</string>
+   </property>
+  </action>
+  <action name="actionGotoLine">
+   <property name="text">
+    <string>Go to line...</string>
    </property>
   </action>
  </widget>

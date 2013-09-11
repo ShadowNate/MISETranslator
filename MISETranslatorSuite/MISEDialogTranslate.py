@@ -27,18 +27,16 @@ from  grabberFromPNG014 import grabberFromPNG
 from  tableViewCheckBoxDelegate import CheckBoxDelegate
 from MISEFontsTranslate25 import MyMainFontDLGWindow
 from monkeySERepakGUI import MyMainRepackerDLGWindow
+import json
 
 ######
-# TODO: Searching for [~TEMP] in translated text does not match the literal due to using regular expressions.
-# TODO: Export to meta file the pending lines.
+# TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
+# TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
 # TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
 # TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: export to excel ?
 # TODO: import from excel ?
 # TODO: spell-check (aspell? hunspell?)
-# TODO: goto line shortcut (CTRL+SHIFT+G)???
-# TODO: repacker integration (UI)
-# TODO: Bug: Searching for '.' produces ANY character!
 # TODO: Bug: Searching for greek is always case sensitive
 # TODO: Sorting books (library catalogue cards MI2:SE) uses system locale. It should use a locale associated with the selected encoding!
 
@@ -89,6 +87,14 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 
 # TODO: Autosave feature?
 # TODO: Note about the SoMI bugs that were "fixed" by changing the classic version (and a how-to). This could be integrated in the interface also (produce the text required in the classic version for the bug cases (lens, The Sea Monkey, 173 piece of eight or sth)
+
+#v 4.92
+## Re-assign the show report dialogue to Ctrl+R
+## Bind Ctrl+L to go to line dialogue
+## Searching for [~TEMP] in translated text does not match the literal due to using regular expressions. Resolved: The case for [~temp] is resolved. The re are not removed. But search for [~temp] now works and other special characters have been supressed (eg '.', '$','^','(',')','[',']')
+## Bug: Searching for '.' produces ANY character! (supressed dot special character)
+## Export the pending lines to a meta file.
+## During a merge or a load... merge the pending lines too.
 
 #v 4.9
 ## Changed encoding of source file (MISEDialogueTranslate to UTF-8
@@ -466,9 +472,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionQuit_3.triggered.connect(self.tryToCloseWin)   ## Should check for dirty bit
         self.ui.actionQuit_3.setShortcut('Ctrl+Q')
 
-        # TODO: Show Report window Ctrl+L (total pending, total marked, total conflicting, total lines, changed lines)
+        # Show Report window Ctrl+R (total pending, total marked, total conflicting, total lines, changed lines)
         self.ui.actionReport.triggered.connect(self.showReportLog)
-        self.ui.actionReport.setShortcut('Ctrl+L')
+        self.ui.actionReport.setShortcut('Ctrl+R')
+
+        self.ui.actionGotoLine.triggered.connect(self.showGotoToLineDlg)
+        self.ui.actionGotoLine.setShortcut('Ctrl+L')
 
         self.ui.actionFind.triggered.connect(self.focusOnFindBox)
         self.ui.actionFind.setShortcut('Ctrl+F')
@@ -580,6 +589,30 @@ class MyMainWindow(QtGui.QMainWindow):
         self.windowRepackerDLG = MyMainRepackerDLGWindow(self.tryEncoding, self.selGameID)
 ##        QtGui.QMessageBox.information(self, "Gui connection not yet implemented...",
 ##                "The Gui for the repacked tool is not yet implemented!")
+
+    def showGotoToLineDlg(self):
+        global listOfEnglishLinesSpeechInfo
+        plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
+        if plithosOfQuotes == 0:
+            QtGui.QMessageBox.critical(self, "Go to line...", "No lines were detected. Please load a file first")
+            return
+
+        text, ok = QtGui.QInputDialog.getText(self, 'Go to...',
+            'Go to Line:')
+        if ok and (self.parseInt(text) <> None):
+            rowToGo = self.parseInt(text) - 1
+            if(rowToGo < 0 or rowToGo > plithosOfQuotes - 1 ):
+                QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
+                return
+            else:
+                indexToSelect = self.ui.quoteTableView.model().index(rowToGo, 1, QModelIndex())
+                self.ui.quoteTableView.setCurrentIndex(indexToSelect)
+                self.ui.quoteTableView.setFocus()
+        elif ok and self.parseInt(text) == None:
+            QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
+            return
+        return
+
 
     def showReportLog(self):
         global listOfEnglishLinesSpeechInfo
@@ -926,6 +959,75 @@ class MyMainWindow(QtGui.QMainWindow):
         return i + 1
 
     #
+    # Export pending lines in meta file
+    #
+    def exportPendingLines(self, relFullFilePath, relFileMD5):
+        objListOfPending = []
+        objListOfPending = self._getPendingLinesList()
+        # get name of related file, get MD5 of related file,
+
+        filepathSplitTbl = os.path.split(relFullFilePath)
+        pathTosFile = filepathSplitTbl[0]
+        relFileSimpleName = filepathSplitTbl[1]
+        metaFileName = relFileSimpleName + ".meta"
+        fullPathMetaFileName= os.path.join( pathTosFile ,  metaFileName)
+        objListOfPending.insert(0, relFileMD5)
+        objListOfPending.insert(0, relFileSimpleName)
+        encodedList = json.dumps(objListOfPending)
+
+        tmpOpenFile = open(fullPathMetaFileName, "wb")
+        tmpOpenFile.write(encodedList)
+        tmpOpenFile.flush()
+        tmpOpenFile.close()
+        print "Export Pending lines: Exported %d lines to %s " % (len(objListOfPending) - 2, metaFileName)
+        return
+
+
+    # retrieves a list with the pending lines
+    def _getPendingLinesList(self):
+        global listOfEnglishLinesSpeechInfo
+        plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
+        listOfLinesForPendingMarked = []
+        del listOfLinesForPendingMarked[:]
+
+        plithosOfQuotesMarked = 0
+
+        lm = self.ui.quoteTableView.model()
+        lmRows = lm.rowCount()
+        lmCols = lm.columnCount()
+        for rowi in range(0,lmRows):
+            indexChkBx = lm.index(rowi, 2, QModelIndex()) # column 2: pending
+            itemChkBx = lm.itemFromIndex(indexChkBx)
+            datoTmp = self.ui.quoteTableView.model().data(indexChkBx).toPyObject()
+            if datoTmp == True:
+                plithosOfQuotesMarked +=1
+                listOfLinesForPendingMarked.append(rowi)
+
+        return listOfLinesForPendingMarked
+
+
+    #
+    # Import pending lines from meta file (if one exists and if a filename is given the pending lines must correspond to that files MD5!)
+    # mode can be "merge" or "load"
+    # WARNING: Importing the pending lines will NOT save them in the session. The user will need to press Submit first)
+    def importPendingLines(self, pendFullMetaFilename, mode):
+        objList = []
+        if not os.access(pendFullMetaFilename, os.F_OK) :
+            return objList ##silent return if no file is found
+        tmpOpenFile = open(pendFullMetaFilename, "rb")
+        encodedData = tmpOpenFile.read()
+        tmpOpenFile.close()
+        objList = json.loads(encodedData)
+        if mode == "merge":
+            pass
+            #print "Merge mode. For file: %s, MD5 %s, Number of lines %d" % (objList[0], objList[1], len(objList) - 2)
+        elif mode == "load":
+            pass
+            #print "Load mode. For file: %s, MD5 %s, Number of lines %d" % (objList[0], objList[1], len(objList) - 2)
+        return objList
+
+
+    #
     # TODO: If there is no associated original file AND the loaded original file does not match (line number at least), then prompt error.
     # TODO: Should add an association to the original file in the SQLite db or sessions xml file. And store the pending lines.
     def setSaveTranslatedFileName(self):
@@ -1118,6 +1220,15 @@ class MyMainWindow(QtGui.QMainWindow):
                             lm.setData(indexOfQuoteInTable, unicode(myParsedQuotesList[rowi][0], self.activeEnc))
 
                 if(numOfQuotesInImportedFile>0):
+                    pendLinesList =[]
+                    pendLinesList = self.importPendingLines(filenNameGiv +".meta" , "merge")
+                    if(pendLinesList <> None and len(pendLinesList) > 2):
+                        # essentially go through all lines in list and mark them
+                        for rownum in pendLinesList[2:]:
+                            indexOfQuoteInTable =  self.ui.quoteTableView.model().index(rownum, 1, QModelIndex())
+                            self.setPendingItem(indexOfQuoteInTable)
+
+
                     reply = QtGui.QMessageBox.information(self, "information message", "The translation file was merged sucessfully! \n"+ \
                                                             "The imported file contained: \n%d total quotes, \nof which: \n%d were changed \nand %d were uniquely changed. \n" % (numOfQuotesInImportedFile, numOfQuotesChangedInImportedFile, numOfQuotesChangedInImportedFile - numOfQuotesChangedButIdenticalInBothFiles)  + \
                                                             "Imported Lines: %d \nCleanly imported: %d \nMerged (in conflict) Lines: %d\n" % ( numOfQuotesImported, numOfCleanImports, numOfConflicts) )
@@ -1187,6 +1298,15 @@ class MyMainWindow(QtGui.QMainWindow):
                     c.close()
                     self.enableActionsAndButtonsForAvalidSession(False)
                     self.loadQuoteFileinTable()
+                    pendLinesList =[]
+                    pendLinesList = self.importPendingLines(filenNameGiv +".meta" , "load")
+                    if(pendLinesList <> None and len(pendLinesList) > 2):
+                        # essentially go through all lines in list and mark them
+                        for rownum in pendLinesList[2:]:
+                            indexOfQuoteInTable =  self.ui.quoteTableView.model().index(rownum, 1, QModelIndex())
+                            self.setPendingItem(indexOfQuoteInTable)
+
+
                     ##self.loadASession(pSessionName = None, pOriginalfullPathsFilename = fileNameOrig)
                     reply = QtGui.QMessageBox.information(self, "information message", "The translation file was loaded sucessfully!")
                 else:
@@ -1222,6 +1342,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.openTranslatedFileNameTxtBx.setText("")
             self.enableActionsAndButtonsForAvalidSession(False)
             self.loadQuoteFileinTable()
+            # we don't import pending lines in this case. It is a simple Load (from an original)
             self.currentSearchKeyword = ""
 
             self.ui.actionSave_Translation.setEnabled(False)
@@ -1406,7 +1527,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.quoteTableView.setItemDelegateForColumn(3,self.custDelegate )
         self.ui.quoteTableView.setItemDelegateForColumn(4,self.custDelegate )
 
-## ++++++++
+##
 ##        for rowi in range(0,plithosOfQuotes):
 ##            for columni in range(2,4):
 ##                __tmpItem = QStandardItem()
@@ -1443,6 +1564,16 @@ class MyMainWindow(QtGui.QMainWindow):
             indexChangedChkbx.model().setData(indexChangedChkbx, True, Qt.EditRole)
         else:
             indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
+
+
+    def setPendingItem(self, index = None):
+        if index == None or index.column() <> 1:
+            return
+        indexChkBx = index.model().index(index.row(), 2, QModelIndex())
+        itemChkBx = index.model().itemFromIndex(indexChkBx)
+        #itemChkBx.setEditable(True)
+        #itemChkBx.setEnabled(True)
+        indexChkBx.model().setData(indexChkBx, True, Qt.EditRole)
 
     def setConflictedItem(self, index = None):
         if index == None or index.column() <> 1:
@@ -1592,7 +1723,9 @@ class MyMainWindow(QtGui.QMainWindow):
             tmpOpenFile.truncate()
 
             tmpOpenFile.close()
-            self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            self.exportPendingLines(myFullPathToTransFile, myTransFileMD5)
+
 #            print "Process Completed. Errors encountered %d." % errorsEncountered
 
         ##########################################################################
@@ -1695,7 +1828,8 @@ class MyMainWindow(QtGui.QMainWindow):
                 tmpOpenFile.write(copyOFlistOfAllLinesHintsCSV[myiter2][1])
             tmpOpenFile.truncate()
             tmpOpenFile.close()
-            self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            self.exportPendingLines(myFullPathToTransFile, myTransFileMD5)
 #            print "Process Completed. Errors encountered %d." % errorsEncountered
 
         #
@@ -1729,7 +1863,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
             tmpOpenFile.close()
 #            print "Process Completed. Errors encountered %d." % errorsEncountered
-            self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            self.exportPendingLines(myFullPathToTransFile, myTransFileMD5)
         #
         # SPEECH INFO (MI2:SE) or textUI (MI2:SE)
         #
@@ -1925,7 +2060,6 @@ class MyMainWindow(QtGui.QMainWindow):
             #
             # --------------------- RE-ORDER LIBRARY CODE ------------------------------
             #
-            # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             #
             #
             listWithUntransQuotes = []
@@ -2319,7 +2453,8 @@ class MyMainWindow(QtGui.QMainWindow):
             #
             # --------------------- END OF RE-ORDER LIBRARY CODE ------------------------
             #
-            self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
+            self.exportPendingLines(myFullPathToTransFile, myTransFileMD5)
 
         #
         # Result status messageBox:
@@ -2468,7 +2603,21 @@ class MyMainWindow(QtGui.QMainWindow):
                 myReFlags |= re.IGNORECASE
 
             # to override the error when the re contains or ends in \
-            keyStr = keyStr.replace('\\','\\\\')
+            #keyStr = keyStr.replace('\\','\\\\')
+            keyStr = keyStr.replace("\\", r"\\")
+            keyStr = keyStr.replace('[',r'\[')
+            keyStr = keyStr.replace(']',r'\]')
+            keyStr = keyStr.replace('?',r'\?')
+            keyStr = keyStr.replace('.',r'\.')
+            keyStr = keyStr.replace('+',r'\+')
+            keyStr = keyStr.replace('*',r'\*')
+            keyStr = keyStr.replace('|',r'\|')
+            keyStr = keyStr.replace('(',r'\(')
+            keyStr = keyStr.replace(')',r'\)')
+            keyStr = keyStr.replace('{',r'\{')
+            keyStr = keyStr.replace('}',r'\}')
+            keyStr = keyStr.replace('^',r'\^')
+            keyStr = keyStr.replace('$',r'\$')
 #        print "%s" % keyStr
         for rowi in searchRange:
             index =  self.ui.quoteTableView.model().index(rowi, columnNumber, QModelIndex())
@@ -2821,7 +2970,7 @@ class MyMainWindow(QtGui.QMainWindow):
                         #print "CREATING NEW SESSION"
                         # clear session errors
                         foundSessionErrors = False
-                        (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID) = self.createAndSaveSession(pOriginalfullPathsFilename, localfullcopyFileName, pSaveMarkers = False)
+                        (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(pOriginalfullPathsFilename, localfullcopyFileName, pSaveMarkers = False)
                         if savedFlag == True:
                             # TODO: fill in text fields
 ##                            self.ui.openFileNameTxtBx.setText()
@@ -2854,6 +3003,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.menuView.setEnabled(pFlagEnable)
         self.ui.menuSearch.setEnabled(pFlagEnable)
         self.ui.actionReport.setEnabled(pFlagEnable)
+        self.ui.actionGotoLine.setEnabled(pFlagEnable)
         self.ui.actionFind.setEnabled(pFlagEnable)
         self.ui.actionFind_Next.setEnabled(pFlagEnable)
         self.ui.actionFind_Next_Marked.setEnabled(pFlagEnable)
@@ -2959,8 +3109,13 @@ class MyMainWindow(QtGui.QMainWindow):
                         c.execute("""insert into toDoLinesForSession(IDSession, LineNum) values(?,?)""", (str(sessionID), str(linenum) ))
             conn.commit()
             c.close()
-        return (retStatus, retSessionName, pOriginalfullPathsFilename, pfullcopyFileName, currSelGameID, sessionID)
+        return (retStatus, retSessionName, pOriginalfullPathsFilename, pfullcopyFileName, currSelGameID, sessionID, md5ForpOriginalfullPathsFilename, md5ForpfullcopyFileName)
 
+
+    def parseInt(self, sin):
+      import re
+      m = re.search(r'^(\d+)[.,]?\d*?', str(sin))
+      return int(m.groups()[-1]) if m and not callable(sin) else None
 
     #
     # For private use: Calculate the MD5 for  given file (splitting it in chunks of block_size while digesting it, to avoid memory hogging) (chuink size 2^7 = 128 bytes)

@@ -983,19 +983,29 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 ##
 ##
     def showPreviewSentence(self):
-
-        uiSentencePreviewFilePath = os.path.join(self.relPath, self.uiFolderName, self.uiSentencePreviewFileName)
-        #print uiFontDlgFilePath
-        if not os.access(uiSentencePreviewFilePath, os.F_OK) :
-            print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
-
-        ##currentFontFile = ''
-
         origFontFilename =   self.ui.openOrigFontTxtBx.text().strip()
         imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
 
         copyFontFileName = self.ui.OutputFontFileTxtBx.text().strip()
         copyPNGFileName =  self.ui.OutputPngFileTxtBx.text().strip()
+
+        if self.tryEncoding is None or self.selGameID is None or \
+         ( (origFontFilename is None or origFontFilename == '' or imageOriginalPNG is None or imageOriginalPNG =='') \
+            and \
+            (copyFontFileName is None or copyFontFileName == '' or copyPNGFileName is None or copyPNGFileName =='') ):
+            ##print "Invalid arguments were given for the initialization of preview Sentence dialogue"
+            MyMainFontDLGWindow.MESSAGE = "Invalid arguments were given for the initialization of preview Sentence dialogue"
+            self.errorMessage()
+            return
+
+        ##currentFontFile = ''
+        uiSentencePreviewFilePath = os.path.join(self.relPath, self.uiFolderName, self.uiSentencePreviewFileName)
+        #print uiFontDlgFilePath
+        if not os.access(uiSentencePreviewFilePath, os.F_OK) :
+            ##print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
+            MyMainFontDLGWindow.MESSAGE = "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
+            self.errorMessage()
+            return
 
         self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
 
@@ -1056,6 +1066,14 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
  #           self.warningLabel.setText("Save Again")
  #       else:
  #           self.warningLabel.setText("Continue")
+
+    def errorMessage(self):
+        msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
+                    "Error", MyMainFontDLGWindow.MESSAGE,
+                    QtGui.QMessageBox.NoButton, self)
+        msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
+        msgBox.exec_()
+
 
  #	def errorMessage(self):
  #		self.errorMessageDialog.showMessage("This dialog shows and remembers "
