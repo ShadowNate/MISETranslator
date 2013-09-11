@@ -548,8 +548,8 @@ class MyMainWindow(QtGui.QMainWindow):
     def tryToCloseWin(self):
         if self.ui is not None:
             self.ui.close()
-        if __name__ == '__main__':
-            sys.exit(0)
+        #if __name__ == '__main__':
+        #    sys.exit(0)
         return
 
     # serves the ctrl+f shortcut

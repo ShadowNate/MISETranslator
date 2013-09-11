@@ -1,3 +1,14 @@
+v4.92
+--------
+- Re-assign the show report dialogue to Ctrl+R
+- Bind Ctrl+L to go to line dialogue
+- Searching for [~TEMP] in translated text does not match the literal due to using regular expressions. Resolved: The case for [~temp] is resolved. The re are not removed. But search for [~temp] now works and other special characters have been supressed (eg '.', '$','^','(',')','[',']')
+- Bug [FIXED]: Searching for '.' produces ANY character! (supressed dot special character)
+- Export the pending lines to a meta file.
+- During a merge or a load... merge the pending lines too.
+- Fixed a forcible shutdown of the application when selecting Quit from menu (or Ctrl+Q)
+
+
 v4.9
 --------
 - Changed encoding of source file (MISEDialogueTranslate to UTF-8
