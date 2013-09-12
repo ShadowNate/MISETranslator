@@ -488,6 +488,19 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="5" colspan="2">
+       <widget class="QCheckBox" name="ReconstructEntireFoneCkBx">
+        <property name="toolTip">
+         <string>The row PNG must contain all the letters from the original font and then the additional letters of the localized language</string>
+        </property>
+        <property name="whatsThis">
+         <string>Switches mode between appending to the end of the font file (unchecked) and reconstructing the entire font file (checked)</string>
+        </property>
+        <property name="text">
+         <string>Also replace original font</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

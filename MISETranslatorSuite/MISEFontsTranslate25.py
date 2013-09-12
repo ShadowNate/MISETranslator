@@ -6,17 +6,18 @@
 #
 
 #
+# TODO Ability to replace the entire font file (english fonts too) to make a more consistent font. Add checkbox, add/save/restore value of flag to sessions! (ReconstructEntireFoneCkBx)
 # TODO set tryEncoding ???<-- from langSettings? (no for now it's by overrideEncoding.txt (and settings, actually settings/lastActiveEncoding is more correct and can be used to retrieve the string of chars from the langSettings).
-# TODO present somehow the string of letters in a new png image (as it would appear in a dialogue in-game, respecting the spacing/kerning/positioning settings.
-#           greek pangram: Ξεσκεπάζω την ψυχοφθόρα βδελυγμία
-#           english pangram: The quick brown fox jumps over the lazy dog
-#           custom phraze (we need to check/preview spacing for punctuation marks, capital letters, special characters etc)
 # TODO button for copy to game dir and keep backups checkbox should implement proper function
 # TODO TEST IF THE CHANGES in the selected game WORK!
 # TODO TEST check on consecutive MI1 sessions (the selected game combo box does not switch value, so the load game id is not called again. Is this a problem, or more efficient?)
-# TODO Ability to replace the entire font file (english fonts too) to make a more consistent font.
 #
+
 ## TODO when empty sessions.txt, we don't need an empty entry inserted in the combobox - WONTFIX. Let it be, we probably need the currentIndex to be 0 then anyway.
+## DONE (in preview dialogue) present somehow the string of letters in a new png image (as it would appear in a dialogue in-game, respecting the spacing/kerning/positioning settings.
+##           greek pangram: Ξεσκεπάζω την ψυχοφθόρα βδελυγμία
+##           english pangram: The quick brown fox jumps over the lazy dog
+##           custom phraze (we need to check/preview spacing for punctuation marks, capital letters, special characters etc)
 ## DONE: game id SHOULD BE selected when a NEW session starts.
 ##        DONE: when a session is LOADED, then the right game ID must be selected (and a correct grabberInstance initialised!) :
 ## DONE: also, the number of valid letters should be configurable (it is different between languages) <-- numOfdetectCharsTxtBx gets its allowed values (and colors red the wrong) in recalculateProcessing, from len(self.myGrabInstance.orderAndListOfForeignLetters)
@@ -182,7 +183,13 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     # [6]: top-top
                     # [7]: left-left
                     # [8]: baselineOffsetSpinBox
-                    atmpLst = ( involvedTokensLst[1],  involvedTokensLst[2],  involvedTokensLst[3],  involvedTokensLst[4],  involvedTokensLst[5], involvedTokensLst[6], involvedTokensLst[7], involvedTokensLst[8])
+                    # [9]: (v4.95) checkbox (1,0) for reconstructing the entire font
+                    # [10]:(v4.95) unused, default 0. (future placeholder)
+                    # [11]:(v4.95) unused, default 0. (future placeholder)
+                    if(len(involvedTokensLst) == 9): # before 4.95
+                        atmpLst = ( involvedTokensLst[1],  involvedTokensLst[2],  involvedTokensLst[3],  involvedTokensLst[4],  involvedTokensLst[5], involvedTokensLst[6], involvedTokensLst[7], involvedTokensLst[8], '0', '0', '0')
+                    elif(len(involvedTokensLst) == 12): #from 4.95
+                        atmpLst = ( involvedTokensLst[1],  involvedTokensLst[2],  involvedTokensLst[3],  involvedTokensLst[4],  involvedTokensLst[5], involvedTokensLst[6], involvedTokensLst[7], involvedTokensLst[8], involvedTokensLst[9], involvedTokensLst[10], involvedTokensLst[11])
                     self.sessionsList.append((involvedTokensLst[0], atmpLst ))
             mysessionsFile.close()
 
@@ -195,6 +202,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         self.ui.graphicsViewPngFont.show()
         self.ui.baselineOffsetSpinBox.setRange(-2, 2)
         self.ui.baselineOffsetSpinBox.setValue(0)
+        self.ui.ReconstructEntireFoneCkBx.setChecked(False)
 
         #		self.openFilesPath = ''
         ## Connect up the buttons.
@@ -335,6 +343,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         self.ui.detectedBaselineTxtBx.setText("0")
 
         self.ui.baselineOffsetSpinBox.setValue(0)
+        self.ui.ReconstructEntireFoneCkBx.setChecked(False)
 
         if self.scene is not None:
             self.scene.clear()
@@ -494,6 +503,8 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     self.ui.innerSpaceLtoLpxTxtBx.setText(itSessionParamsLst[5])
                     self.ui.InnerSpaceTtoTpxTxtBx.setText(itSessionParamsLst[6])
                     self.ui.baselineOffsetSpinBox.setValue(int(itSessionParamsLst[7]))
+                    reconstructEntireFontFlag = False if (int(itSessionParamsLst[8]) == 0) else True
+                    self.ui.ReconstructEntireFoneCkBx.setChecked(reconstructEntireFontFlag)
                     #
                     # TODO: maybe I can check with some checksums stored to verify that the files were not changed outside the session!
                     # For now, just check if in the same folder there are files with the expected name for the corresponding output files
@@ -506,9 +517,11 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                             self.myGrabInstance.setImageOriginalPNG(imageOriginalPNG)
                             self.myGrabInstance.setGameID(self.selGameID)
                             self.myGrabInstance.setActiveEncoding(self.tryEncoding)
+                            self.myGrabInstance.setReconstructEntireFont(reconstructEntireFontFlag)
                             self.myGrabInstance.calcFromDB() # needed because of potential changes in GameId and Encoding!
                         else:
                             self.myGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG)
+                            self.myGrabInstance.setReconstructEntireFont(reconstructEntireFontFlag)
                         #
                         # get expected filenames.
                         expectedFileNameForOutputPNG = self.myGrabInstance.getExpectedFileNameForOutputPNG()
@@ -535,6 +548,15 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 
                             (pTotalFontLetters, pImportedFontLetters) = self.myGrabInstance.findTotalAndImportedChars(expectedFileNameForOutputINFO)
                             self.ui.numOfdetectCharsTxtBx.setText(str(pTotalFontLetters))
+                            mypalette = QPalette()
+                            mypalette = self.ui.numOfImportedCharsTxtBx.palette()  # get QPalette for the QLineEdit
+                            if (reconstructEntireFontFlag == False and pImportedFontLetters != len(self.myGrabInstance.orderAndListOfForeignLetters)) \
+                                or (reconstructEntireFontFlag == True and pImportedFontLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile)) :
+                                mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('red') )
+                            else:
+                                mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('white') )
+
+                            self.ui.numOfImportedCharsTxtBx.setPalette(mypalette)
                             self.ui.numOfImportedCharsTxtBx.setText(str(pImportedFontLetters))
                             self.loadCharPropertiesInTable(pTotalFontLetters)
                         #
@@ -593,7 +615,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                         self.ui.openOrigFontTxtBx.text().strip(),  \
                         self.ui.innerSpaceLtoLpxTxtBx.text().strip(),  \
                         self.ui.InnerSpaceTtoTpxTxtBx.text().strip(), \
-                        self.ui.baselineOffsetSpinBox.value())
+                        self.ui.baselineOffsetSpinBox.value(), \
+                        '1' if self.ui.ReconstructEntireFoneCkBx.isChecked() else '0', \
+                        '0', \
+                        '0')
             for i in range(0, len(self.sessionsList)):
                 (itSessionName, itSessionParamsLst) = self.sessionsList[i]
                 if itSessionName == sessionName:
@@ -626,7 +651,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         if os.path.exists(uiSessionsFilePath ) and os.access(uiSessionsFilePath, os.F_OK):
             mysessionsFile = open(uiSessionsFilePath, 'wb')
             for (itSessionName, itSessionParamsLst) in self.sessionsList:
-                newEntryStr = "%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%d\n" % (itSessionName, \
+                newEntryStr = "%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % (itSessionName, \
                                                                     int(itSessionParamsLst[0]), \
                                                                     itSessionParamsLst[1], \
                                                                     itSessionParamsLst[2], \
@@ -634,7 +659,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                                                                     itSessionParamsLst[4], \
                                                                     int(itSessionParamsLst[5]) , \
                                                                     int(itSessionParamsLst[6]), \
-                                                                    int(itSessionParamsLst[7]) )
+                                                                    int(itSessionParamsLst[7]), \
+                                                                    int(itSessionParamsLst[8]), \
+                                                                    int(itSessionParamsLst[9]), \
+                                                                    int(itSessionParamsLst[10]))
                 newEntryStrEnc = unicode.encode("%s" % newEntryStr, 'utf-8')
                 mysessionsFile.write(newEntryStrEnc) # loop writing all entries
             mysessionsFile.close()
@@ -674,6 +702,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         origFontFilename =   self.ui.openOrigFontTxtBx.text().strip()
         imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
 
+        reconstructEntireFontFlag = True if self.ui.ReconstructEntireFoneCkBx.isChecked() else False
         copyFontFileName = self.ui.OutputFontFileTxtBx.text().strip()
         copyPNGFileName =  self.ui.OutputPngFileTxtBx.text().strip()
 
@@ -681,10 +710,12 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             if self.myGrabInstance is not None:
                 self.myGrabInstance.setCopyFontFileName(copyFontFileName)
                 self.myGrabInstance.setCopyPNGFileName(copyPNGFileName)
+                self.myGrabInstance.setReconstructEntireFont(reconstructEntireFontFlag)
             else:
                 self.myGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID, origFontFilename,   imageOriginalPNG)
                 self.myGrabInstance.setCopyFontFileName(copyFontFileName)
                 self.myGrabInstance.setCopyPNGFileName(copyPNGFileName)
+                self.myGrabInstance.setReconstructEntireFont(reconstructEntireFontFlag)
         else:
             #print "Bad Arguments for outlining!"
             errMsg = "Bad Arguments for outlining!"
@@ -856,6 +887,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         imageOriginalPNG = self.ui.openFileNameTxtBx.text().strip()
         imageRowFilePNG=   self.ui.openCustRowFileTxtBx.text().strip()
         customBaseLineOffset = self.ui.baselineOffsetSpinBox.value()
+        reconstructEntireFontFlag = True if self.ui.ReconstructEntireFoneCkBx.isChecked() else False
 
         if  origFontFilename <> "" and imageOriginalPNG <> "" and imageRowFilePNG <> "" and minSpaceBetweenLettersInRowLeftToLeft > 0 and minSpaceBetweenLettersInColumnTopToTop >0:
             if self.myGrabInstance is not None:
@@ -863,6 +895,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                 self.myGrabInstance.setDasOrigFontFilename(origFontFilename)
                 self.myGrabInstance.setImageOriginalPNG(imageOriginalPNG)
                 self.myGrabInstance.setImageRowFilePNG(imageRowFilePNG)
+                self.myGrabInstance.setReconstructEntireFont(reconstructEntireFontFlag)
                 self.myGrabInstance.setMinSpaceBetweenLettersInRowLeftToLeft(minSpaceBetweenLettersInRowLeftToLeft)
                 self.myGrabInstance.setMinSpaceBetweenLettersInColumnTopToTop(minSpaceBetweenLettersInColumnTopToTop)
 ##                self.myGrabInstance.setBaseLineOffset(customBaseLineOffset)
@@ -893,10 +926,12 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 #            mypalette.setColor(widget.backgroundRole(), QColor('red'))
 #            numOfImportedCharsTxtBx.setPalette(palette)
             mypalette = self.ui.numOfImportedCharsTxtBx.palette()  # get QPalette for the QLineEdit
-            if importedNumOfLetters != len(self.myGrabInstance.orderAndListOfForeignLetters):
+            if (reconstructEntireFontFlag == False and importedNumOfLetters != len(self.myGrabInstance.orderAndListOfForeignLetters)) \
+                or (reconstructEntireFontFlag == True and importedNumOfLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile)) :
                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('red') )
             else:
                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('white') )
+
             self.ui.numOfImportedCharsTxtBx.setPalette(mypalette)
             self.ui.numOfImportedCharsTxtBx.setText(str(importedNumOfLetters))
             self.ui.numOfImportedCharsTxtBx.setModified(True)

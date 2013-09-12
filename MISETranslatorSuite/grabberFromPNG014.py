@@ -46,6 +46,7 @@ class grabberFromPNG:
     MISE2_CodeName= 'MI2SE'
     lettersInOriginalFontFileDict = {1: 0x9a, 2:0x9b}
 
+    reconstructEntireFont = False
     minSpaceBetweenLettersInRowLeftToLeft =0
     minSpaceBetweenLettersInColumnTopToTop = 0
     origFontFilename=""
@@ -350,6 +351,7 @@ class grabberFromPNG:
     def __init__(self, pselectedEncoding=None, pselectedGameID=None, porigFontFilename=None,  pimageOriginalPNG=None):
         self.minSpaceBetweenLettersInRowLeftToLeft = 0
         self.minSpaceBetweenLettersInColumnTopToTop = 0
+        self.reconstructEntireFont = False
         self.origFontFilename=porigFontFilename
         self.copyFontFileName=""
         self.copyPNGFileName=""
@@ -627,6 +629,10 @@ class grabberFromPNG:
         return
     def setMinSpaceBetweenLettersInColumnTopToTop(self, pminSpaceBetweenLettersInColumnTopToTop):
         self.minSpaceBetweenLettersInColumnTopToTop = pminSpaceBetweenLettersInColumnTopToTop
+        return
+
+    def setReconstructEntireFont(self, pRecEntireFontParam):
+        self.reconstructEntireFont = pRecEntireFontParam
         return
 ##    def setBaseLineOffset(self, pcustomBaseLineOffset):
 ##        self.baselineOffset = pcustomBaseLineOffset
@@ -1454,7 +1460,8 @@ class grabberFromPNG:
 #
 if __name__ == "__main__":
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) == 7:
+        TMPreconstructEntireFont = False if (int(sys.argv[6]) == 0) else True
         TMPminSpaceBetweenLettersInRowLeftToLeft = int(sys.argv[4])
         TMPminSpaceBetweenLettersInColumnTopToTop = int(sys.argv[5])
         TMPorigFontFilename = sys.argv[3]
@@ -1465,6 +1472,7 @@ if __name__ == "__main__":
         myGrabInstance.setImageRowFilePNG(TMPimageRowFilePNG)
         myGrabInstance.setMinSpaceBetweenLettersInRowLeftToLeft(TMPminSpaceBetweenLettersInRowLeftToLeft)
         myGrabInstance.setMinSpaceBetweenLettersInColumnTopToTop(TMPminSpaceBetweenLettersInColumnTopToTop)
+        myGrabInstance.setReconstructEntireFont(TMPreconstructEntireFont)
 #        myGrabInstance.setBaseLineOffset(TMPcustomBaseLineOffset)
         myGrabInstance.generateModFiles(TMPcustomBaseLineOffset)
     else:
