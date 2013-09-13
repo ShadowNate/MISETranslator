@@ -415,7 +415,7 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QLineEdit" name="innerSpaceLtoLpxTxtBx">
+       <widget class="QLineEdit" name="InnerSpaceTtoTpxTxtBx">
         <property name="maximumSize">
          <size>
           <width>40</width>
@@ -450,7 +450,7 @@
        </widget>
       </item>
       <item row="3" column="3">
-       <widget class="QLineEdit" name="InnerSpaceTtoTpxTxtBx">
+       <widget class="QLineEdit" name="innerSpaceLtoLpxTxtBx">
         <property name="maximumSize">
          <size>
           <width>40</width>
@@ -888,8 +888,8 @@
   <tabstop>BrowseCustRowfilesBtn</tabstop>
   <tabstop>openOrigFontTxtBx</tabstop>
   <tabstop>BrowseOrigFontfileBtn</tabstop>
-  <tabstop>innerSpaceLtoLpxTxtBx</tabstop>
   <tabstop>InnerSpaceTtoTpxTxtBx</tabstop>
+  <tabstop>innerSpaceLtoLpxTxtBx</tabstop>
   <tabstop>calculateOutputBtn</tabstop>
   <tabstop>OutputPngFileTxtBx</tabstop>
   <tabstop>loadOutputPNGBtn</tabstop>

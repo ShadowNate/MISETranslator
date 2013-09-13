@@ -988,7 +988,7 @@ class grabberFromPNG:
                         #
                         # FOR ITALICS MODE, GET SOME FEATURES OF SPECIFIC LETTERS
                         #
-                        specificLetterPrototypes = ('y', 'i', 'u', 'B', 'O', 'I', 'T', 'o', 't', 'p', 'g')
+                        specificLetterPrototypes = ('y', 'i', 'u', 'B', 'O', 'I', 'T', 'o', 't', 'p','q','g', 'v','c')
                         specificLetterPrototypesToFeaturesDict = dict((k, (0,0,0)) for k in specificLetterPrototypes)
                         print specificLetterPrototypesToFeaturesDict
 
@@ -1153,6 +1153,7 @@ class grabberFromPNG:
                                     if not errorFound:
 
                                         curHeightForNextAppend = pixHeightToBeginAppend
+                                        print "Len list of letterboxes! %d" % (len(self.listOfLetterBoxes), )
                                         for (c_startCol, c_startRow, c_endCol, c_endRow) in self.listOfLetterBoxes[0:]:
                                             currLetterFinishCol  = previousLetterFinishCol + interLetterSpacingInPNG + (c_endCol-c_startCol) + 1
                                             if currLetterFinishCol >= imOrigGameFont.size[0]:
@@ -1198,7 +1199,7 @@ class grabberFromPNG:
                                             # TODO: FUTURE: since in reconstructing the entire font we change the width and placement of the original characters in the boxes,
                                             #       maybe it won't be correct to keep the original kerningLetterInt and pixelsWithinLetterBoxFromLeftToLetterInt for the original letters (?)
                                             if (self.reconstructEntireFont == False) \
-                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                or (self.reconstructEntireFont == True and (2 +importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
                                                 pixelsWithinLetterBoxFromLeftToLetterInt = 0
                                                 kerningLetterInt = 0
 
@@ -1212,7 +1213,7 @@ class grabberFromPNG:
                                             # For greek letters:
                                             # ήβγζημξρςφχψ
                                             # Should behave like:
-                                            # j
+                                            # p
                                             #
                                             # For greek letters:
                                             # ΐιίϊ
@@ -1240,116 +1241,131 @@ class grabberFromPNG:
                                             # Ι
                                             # TODO: ADD Greek flag to only use them for greek
                                             if italicsMode == True:
-                                                currPngIndex = importedNumOfLetters-1
-                                                currLett = self.orderAndListOfForeignLetters[currPngIndex];
-                                                print "Current letter is %s"  % (currLett)
-                                                if (currPngIndex == self.pngIndexOfForeignLetter(u"β") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"γ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ζ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"η") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ή") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"μ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ξ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ρ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ς") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"φ") or \
-                                                    currPngIndex == self.pngIndexOfForeignLetter(u"ψ") \
-                                                ):
-                                                    letterPrototype = 'y'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ΐ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ι") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ί") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ϊ") \
-                                                ):
-                                                    letterPrototype = 'i'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ΰ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"υ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ϋ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ύ") \
-                                                ):
-                                                    letterPrototype = 'u'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Έ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ή") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ό") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ώ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Β") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Γ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ε") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ζ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Η") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Κ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Μ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ν") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ξ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Π") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ρ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Σ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Χ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ψ") \
-                                                ):
-                                                    letterPrototype = 'B'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                currPngIndex = 0
+                                                foreignItalicFontCharacter = False
+                                                if (self.reconstructEntireFont == False):
+                                                    currPngIndex = importedNumOfLetters-1
+                                                    foreignItalicFontCharacter = True
+                                                elif  (self.reconstructEntireFont == True and (2+importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                    currPngIndex = 2 + importedNumOfLetters - existingSizeOfTableInOrigImage -1
+                                                    foreignItalicFontCharacter = True
+                                                if foreignItalicFontCharacter == True:
+                                                    ##print "Current letter index is %d, %d, %d"  % (currPngIndex, importedNumOfLetters, existingSizeOfTableInOrigImage)
+                                                    if(currPngIndex >= len(self.orderAndListOfForeignLetters)):
+                                                        print "WARNING: Out of range letter index is %d"  % (currPngIndex)
+                                                    else:
+                                                        currLett = self.orderAndListOfForeignLetters[currPngIndex];
+                                                        print "Current letter is %s"  % (currLett)
+                                                        if (currPngIndex == self.pngIndexOfForeignLetter(u"β") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"γ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"ζ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"η") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"ή") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"ξ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"φ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"ψ") \
+                                                        ):
+                                                            letterPrototype = 'q'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ΐ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ι") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ί") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ϊ") \
+                                                        ):
+                                                            letterPrototype = 'i'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ΰ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"υ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ϋ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ύ") \
+                                                        ):
+                                                            letterPrototype = 'u'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Έ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ή") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ό") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ώ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Β") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Γ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ε") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ζ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Η") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Κ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Μ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ν") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ξ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Π") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ρ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Σ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Χ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ψ") \
+                                                        ):
+                                                            letterPrototype = 'B'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
 
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Ό") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Θ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ο") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Φ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ω") \
-                                                ):
-                                                    letterPrototype = 'O'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Ί") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ι") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"Ϊ") \
-                                                ):
-                                                    letterPrototype = 'I'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Τ")\
-                                                ):
-                                                    letterPrototype = 'T'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"χ")\
-                                                ):
-                                                    letterPrototype = 'p'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ο") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"ό") \
-                                                ):
-                                                    letterPrototype = 'o'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                elif ( currPngIndex == self.pngIndexOfForeignLetter(u"τ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"κ") or \
-                                                        currPngIndex == self.pngIndexOfForeignLetter(u"π") \
-                                                ):
-                                                    letterPrototype = 'g'
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
-                                                else:
-                                                    (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= (0,(widthTargetLangInt-1))
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Ό") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Θ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ο") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Φ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ω") \
+                                                        ):
+                                                            letterPrototype = 'O'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Ί") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ι") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"Ϊ") \
+                                                        ):
+                                                            letterPrototype = 'I'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"Τ")\
+                                                        ):
+                                                            letterPrototype = 'T'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ν")\
+                                                        ):
+                                                            letterPrototype = 'c'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"χ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"μ") or \
+                                                            currPngIndex == self.pngIndexOfForeignLetter(u"ρ") \
+                                                        ):
+                                                            letterPrototype = 'p'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"ο") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"ό") \
+                                                        ):
+                                                            letterPrototype = 'o'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        elif ( currPngIndex == self.pngIndexOfForeignLetter(u"τ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"κ") or \
+                                                                currPngIndex == self.pngIndexOfForeignLetter(u"π") \
+                                                        ):
+                                                            letterPrototype = 'g'
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= self.indentAndKernForItalicsWithProtoLetter(specificLetterPrototypesToFeaturesDict,letterPrototype,widthTargetLangInt)
+                                                        else:
+                                                            (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= (0,(widthTargetLangInt-1))
 
 
                                             if (self.reconstructEntireFont == False) \
-                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                or (self.reconstructEntireFont == True and (importedNumOfLetters + 2) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
                                                 pixelsWithinLetterBoxFromLeftToLetterToWrite = pack('h', pixelsWithinLetterBoxFromLeftToLetterInt)
                                                 copyFontFile.write(pixelsWithinLetterBoxFromLeftToLetterToWrite)
                                             else: # seek to the next 2 bytes
-                                                copyFontFile.seek(firstTableLineOffset + (importedNumOfLetters -1 )* 16 + 10)
+                                                copyFontFile.seek(firstTableLineOffset + (2+importedNumOfLetters -1 )* 16 + 10)
 
                                             # width is updated whether we reconstruct the font or simply append
                                             widthLetterToWrite = pack('h', widthTargetLangInt)
                                             copyFontFile.write(widthLetterToWrite)
 
                                             if (self.reconstructEntireFont == False) \
-                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                or (self.reconstructEntireFont == True and (importedNumOfLetters + 2) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
                                                 if italicsMode == False:
                                                     kerningLetterInt = (widthTargetLangInt-1)
 
                                                 kerningLetterToWrite = pack('h', kerningLetterInt )
                                                 copyFontFile.write(kerningLetterToWrite)
                                             else: # seek to the next 2 bytes
-                                                copyFontFile.seek(firstTableLineOffset + (importedNumOfLetters -1 )* 16 + 14)
+                                                copyFontFile.seek(firstTableLineOffset + (2+importedNumOfLetters -1 )* 16 + 14)
 
                                             dummyZerosToWrite = pack('h', 0)
                                             copyFontFile.write(dummyZerosToWrite)
@@ -1357,7 +1373,12 @@ class grabberFromPNG:
                                             previousLetterFinishCol = previousLetterFinishCol+interLetterSpacingInPNG + (c_endCol-c_startCol) + 1
 
                         ##                    print importedNumOfLetters, c_startCol,c_startRow, c_endCol, c_endRow
-                                        totalFontLetters = existingSizeOfTableInOrigImage + importedNumOfLetters
+                                        totalFontLetters = 0
+                                        if (self.reconstructEntireFont == False):
+                                           totalFontLetters = existingSizeOfTableInOrigImage + importedNumOfLetters
+                                        else:
+                                           totalFontLetters = importedNumOfLetters + 2
+
                                         # update the size of the table in the .font file 4rth byte:
                                         copyFontFile.seek(4)
                                         print "totalFontLetters %d" % (totalFontLetters)
@@ -1477,7 +1498,8 @@ class grabberFromPNG:
                     tmpChar = '0'
                     if(i >= 0x0 and i <= (self.lettersInOriginalFontFile - 1) ):
                         tmpChar = self.replacePngIndexForOrigChars[i]
-                    if(i >= self.lettersInOriginalFontFile):
+                    if(i >= self.lettersInOriginalFontFile and i < self.lettersInOriginalFontFile + len(self.orderAndListOfForeignLetters) ):
+                        ##print "key %d" % (i, )
                         tmpChar = self.rev_replacePngIndexWithCorrAsciiChar[i]
                     retList.append((tmpColStart[0], tmpRowStart[0], tmpColEnd[0], tmpRowEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0], tmpChar))
                 else:

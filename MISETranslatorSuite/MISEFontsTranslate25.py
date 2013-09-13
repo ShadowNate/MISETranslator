@@ -972,7 +972,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     index = lm.index(rowi, 0, QModelIndex())
                     if rowi < self.myGrabInstance.lettersInOriginalFontFile:
                         lm.setData(index, unicode(str(outlinesList[rowi][7]),self.origEncoding))
-                        print unicode(str(outlinesList[rowi][7]),self.origEncoding)
+                        #print unicode(str(outlinesList[rowi][7]),self.origEncoding)
                     else:
                         lm.setData(index, unicode(str(outlinesList[rowi][7]),self.myGrabInstance.activeEncoding))
                     for columni in range(0,7):
