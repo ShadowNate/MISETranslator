@@ -30,6 +30,7 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
+# TODO: Remember the width of columns of last session before closing app. Remember screen resolution.
 # TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
 # TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
 # TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.

@@ -551,7 +551,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                             mypalette = QPalette()
                             mypalette = self.ui.numOfImportedCharsTxtBx.palette()  # get QPalette for the QLineEdit
                             if (reconstructEntireFontFlag == False and pImportedFontLetters != len(self.myGrabInstance.orderAndListOfForeignLetters)) \
-                                or (reconstructEntireFontFlag == True and pImportedFontLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile)) :
+                                or (reconstructEntireFontFlag == True and pImportedFontLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile - 2)) :
                                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('red') )
                             else:
                                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('white') )
@@ -927,7 +927,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 #            numOfImportedCharsTxtBx.setPalette(palette)
             mypalette = self.ui.numOfImportedCharsTxtBx.palette()  # get QPalette for the QLineEdit
             if (reconstructEntireFontFlag == False and importedNumOfLetters != len(self.myGrabInstance.orderAndListOfForeignLetters)) \
-                or (reconstructEntireFontFlag == True and importedNumOfLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile)) :
+                or (reconstructEntireFontFlag == True and importedNumOfLetters != (len(self.myGrabInstance.orderAndListOfForeignLetters) + self.myGrabInstance.lettersInOriginalFontFile - 2)) :
                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('red') )
             else:
                 mypalette.setColor( QPalette.Normal, QPalette.Base, QColor('white') )
@@ -968,15 +968,17 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             lm.setHeaderData(7,Qt.Horizontal, u"Kern")
 
             for rowi in range(0,pTotalFontLetters):
-                index = lm.index(rowi, 0, QModelIndex())
-                if rowi < self.myGrabInstance.lettersInOriginalFontFile:
-                    lm.setData(index, unicode(str(outlinesList[rowi][7]),self.origEncoding))
-                else:
-                    lm.setData(index, unicode(str(outlinesList[rowi][7]),self.myGrabInstance.activeEncoding))
-                for columni in range(0,7):
-                    index = lm.index(rowi, columni+1, QModelIndex())
-                    # tmpRowStart[0], tmpColStart[0], tmpRowEnd[0], tmpColEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0]
-                    lm.setData(index, unicode(str(outlinesList[rowi][columni]),self.myGrabInstance.activeEncoding))
+                if rowi < len(outlinesList):
+                    index = lm.index(rowi, 0, QModelIndex())
+                    if rowi < self.myGrabInstance.lettersInOriginalFontFile:
+                        lm.setData(index, unicode(str(outlinesList[rowi][7]),self.origEncoding))
+                        print unicode(str(outlinesList[rowi][7]),self.origEncoding)
+                    else:
+                        lm.setData(index, unicode(str(outlinesList[rowi][7]),self.myGrabInstance.activeEncoding))
+                    for columni in range(0,7):
+                        index = lm.index(rowi, columni+1, QModelIndex())
+                        # tmpRowStart[0], tmpColStart[0], tmpRowEnd[0], tmpColEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0]
+                        lm.setData(index, unicode(str(outlinesList[rowi][columni]),self.myGrabInstance.activeEncoding))
             self.ui.charsInFontFileTblView.setModel(lm)
         return
 ##

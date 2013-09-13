@@ -859,7 +859,10 @@ class grabberFromPNG:
                 tmpSizeOfTableWithFontsIndexedToImage = unpack('B',tmpFontFile.read(1))
                 totalCharactersInInfoFile =  tmpSizeOfTableWithFontsIndexedToImage[0]
                 tmpFontFile.close()
-                importedCharactersInInfoFile = totalCharactersInInfoFile - lettersInOriginalFontFile
+                if self.reconstructEntireFont == False:
+                    importedCharactersInInfoFile = totalCharactersInInfoFile - lettersInOriginalFontFile
+                else:
+                    importedCharactersInInfoFile = totalCharactersInInfoFile - 2
                 return (totalCharactersInInfoFile, importedCharactersInInfoFile)
             except:
                 errorFound = True
@@ -925,8 +928,9 @@ class grabberFromPNG:
             w1, h1 = im.size
             trimTopPixels = 0
             trimBottomPixels = 0
-            italicsMode = False   # will be set to true only if the prefic of the row file is itcrp_ or it_ in order to activate some extra settings for kerning and letter width!
-
+            italicsMode = False   # will be set to true only if the prefix of the row file is itcrp_ or it_ in order to activate some extra settings for kerning and letter width!
+            # TODO the note about speicial handling of row PNG files with it_ or itcrp_ prefix, should be moved to the documentation
+            # TODO the special settings for handling italic native letters should be in the settings(?)
             filepathSplitTbl = os.path.split(self.imageRowFilePNG)
             sFilenameOnlyImageRowFilePNG = filepathSplitTbl[1]
 
@@ -938,6 +942,7 @@ class grabberFromPNG:
                 trimBottomPixels = 1
                 print "Will trim upper line by %d pixels and bottom line by %d pixels" % (trimTopPixels, trimBottomPixels)
             pix = im.load()
+            # pix argument is mutable (will be changed in the parseImage body)
             while self.parseImage(pix, w1, h1, trimTopPixels, trimBottomPixels) == 0:
                 self.lettersFound=  self.lettersFound+1
         #    print self.listOfBaselines
@@ -967,10 +972,18 @@ class grabberFromPNG:
                         origFontFile.seek(firstTableLineOffset + 6)
                         tmpFirstRowEnd = unpack('h',origFontFile.read(2))    # unpack always returns a tuple
                         origGameFontDiakenoHeight = tmpFirstRowEnd[0]
+                        if self.reconstructEntireFont == True:   # only if not reconstructing the entire font.
+                            origFontFile.seek(firstTableLineOffset + 2*16 )
+                            tmpLastColumnOfSecondLetterInOrigImage = unpack('h',origFontFile.read(2))   # unpack always returns a tuple
+                            cTwoOrigFirstCharsEndCol = tmpLastColumnOfSecondLetterInOrigImage[0]
+
                         lastTableLineOffset = firstTableLineOffset +  (existingSizeOfTableInOrigImage -1 )* 16      #teleutaia grammi
                         origFontFile.seek(lastTableLineOffset + 6)
-                        tmpLastPixelRowOfOrigImage = unpack('h',origFontFile.read(2))    # unpack always returns a tuple
-                        pixHeightToBeginAppend = tmpLastPixelRowOfOrigImage[0]           # this is actually the next line pixel after the end of the previous line (but the font file indexes pixels with a +1 as it starts from 1,1 not 0,0)
+                        tmpLastPixelRowOfOrigImage = unpack('h',origFontFile.read(2))   # unpack always returns a tuple
+                        if self.reconstructEntireFont == False:
+                            pixHeightToBeginAppend = tmpLastPixelRowOfOrigImage[0]      # this is actually the next line pixel after the end of the previous line (but the font file indexes pixels with a +1 as it starts from 1,1 not 0,0)
+                        else:
+                            pixHeightToBeginAppend = 0
                 #        print origGameFontDiakenoHeight, pixHeightToBeginAppend
                         #
                         # FOR ITALICS MODE, GET SOME FEATURES OF SPECIFIC LETTERS
@@ -1045,41 +1058,62 @@ class grabberFromPNG:
             #                normalizedPopularBaseLine = popularBaseline - minRowTop ##old
                             normalizedPopularBaseLine = customPopularBaseline - minRowTop ##new
 
-                            # TO DO: handle case where the png file already HAS space for extra letters and does not need CANVAS expansion, or needs less expansion than greedily calculated
+                            # TO DO (done?): handle case where the png file already HAS space for extra letters and does not need CANVAS expansion, or needs less expansion than greedily calculated
                             #       we need to consult the .font file for this. (see until which row it is filled with letters, compare with the size[1] (height), calculate how many rows can be afforded without canvas expansion
                             #       and add (if necessary) remainder of rows.
+                            # YPOLOGISMOS TARGET FONT IMAGE HEIGHT
+                            if self.reconstructEntireFont == False:
+                                # yparxoun arxeia me mono to TM char sthn teleutaia grammi opote kanoun perikopi sto ypsos. DEN TO 8ELOUME AUTO!
+                                norm_OrigGameFontHeight = 0
+                                if int(imOrigGameFont.size[1]) % int(origGameFontDiakenoHeight) > 0 :
+                                    norm_OrigGameFontHeight = int(origGameFontDiakenoHeight) * (int( int(imOrigGameFont.size[1])/ int(origGameFontDiakenoHeight)) +1)
+                                else:
+                                    norm_OrigGameFontHeight = imOrigGameFont.size[1]
 
-                            # yparxoun arxeia me mono to TM char sthn teleutaia grammi opote kanoun perikopi sto ypsos. DEN TO 8ELOUME AUTO!
-                            norm_OrigGameFontHeight = 0
-                            if int(imOrigGameFont.size[1]) % int(origGameFontDiakenoHeight) > 0 :
-                                norm_OrigGameFontHeight = int(origGameFontDiakenoHeight) * (int( int(imOrigGameFont.size[1])/ int(origGameFontDiakenoHeight)) +1)
-                            else:
-                                norm_OrigGameFontHeight = imOrigGameFont.size[1]
+                                freeLinesInOriginalFile = int((norm_OrigGameFontHeight - pixHeightToBeginAppend) / origGameFontDiakenoHeight)  ## old
+                                if freeLinesInOriginalFile < 0 :
+                                    print "freeLinesInOriginalFile before zeroing: %d" % freeLinesInOriginalFile
+                                    extra_neededRows += (-1)* freeLinesInOriginalFile # for case of the missing letters in Mi2:SE () TODO: if the problem is only this file, we could specifically set the filename in the condition to increase the extra_needed_rows.
+                                    freeLinesInOriginalFile = 0 # was here before
+                                #debug
+                                print "freeLinesInOriginalFile: %d" % freeLinesInOriginalFile
+                                print "extra_neededRows: %d" % extra_neededRows
+                                if freeLinesInOriginalFile <= extra_neededRows:
+                                    extra_neededRows = extra_neededRows - freeLinesInOriginalFile
+                                    newHeight = norm_OrigGameFontHeight + (extra_neededRows * origGameFontDiakenoHeight) ## old
+                                elif freeLinesInOriginalFile > 0:
+                                    newHeight = imOrigGameFont.size[1]
+                                else:
+                                    newHeight = norm_OrigGameFontHeight
+                            else: # full reconstruct
+                                newHeight = (extra_neededRows * origGameFontDiakenoHeight) ## the extra needed rows here are the rows for all letters in the row png file, which in this case include the original font letters too!
 
-                            freeLinesInOriginalFile = int((norm_OrigGameFontHeight - pixHeightToBeginAppend) / origGameFontDiakenoHeight)  ## old
-                            if freeLinesInOriginalFile < 0 :
-                                print "freeLinesInOriginalFile before zeroing: %d" % freeLinesInOriginalFile
-                                extra_neededRows += (-1)* freeLinesInOriginalFile # for case of the missing letters in Mi2:SE () TODO: if the problem is only this file, we could specifically set the filename in the condition to increase the extra_needed_rows.
-                                freeLinesInOriginalFile = 0 # was here before
-                            #debug
-                            print "freeLinesInOriginalFile: %d" % freeLinesInOriginalFile
-                            print "extra_neededRows: %d" % extra_neededRows
-                            if freeLinesInOriginalFile <= extra_neededRows:
-                                extra_neededRows = extra_neededRows - freeLinesInOriginalFile
-                                newHeight = norm_OrigGameFontHeight + (extra_neededRows * origGameFontDiakenoHeight) ## old
-                            elif freeLinesInOriginalFile > 0:
-                                newHeight = imOrigGameFont.size[1]
-                            else:
-                                newHeight = norm_OrigGameFontHeight
                             # to kanoume zygo ari8mo
                             if newHeight % 2 > 0 : newHeight += 1
-
-                            imTargetGameFont = Image.new(imOrigGameFont.mode,(imOrigGameFont.size[0], newHeight), (0,0,0,0))
-                            imageCropped = imOrigGameFont
-                            maskImageCropped = imageCropped
-                            imTargetGameFont.paste(imageCropped, (0,0, imOrigGameFont.size[0], imOrigGameFont.size[1]), maskImageCropped)
-                            importedNumOfLetters = 0
+                            # CREATION OF COPY (target) font image !!!!!!!!
                             previousLetterFinishCol = 0
+                            imTargetGameFont = Image.new(imOrigGameFont.mode,(imOrigGameFont.size[0], newHeight), (0,0,0,0))
+                            if self.reconstructEntireFont == False:   # only if not reconstructing the entire font.
+                                imageCropped = imOrigGameFont
+                                maskImageCropped = imageCropped
+                                imTargetGameFont.paste(imageCropped, (0,0, imOrigGameFont.size[0], imOrigGameFont.size[1]), maskImageCropped)
+                                previousLetterFinishCol = 0
+                            else: # reconstructing the entire font. Keep only the first two characters of the original!
+                                cTwoOrigFirstCharsEndRow = 1 * origGameFontDiakenoHeight
+                                imageCropped = imOrigGameFont.crop((0, 0, cTwoOrigFirstCharsEndCol, cTwoOrigFirstCharsEndRow ))
+                                maskImageCropped = imageCropped
+                                imTargetGameFont.paste(imageCropped,
+                                                                (0,
+                                                                0,
+                                                                cTwoOrigFirstCharsEndCol,
+                                                                cTwoOrigFirstCharsEndRow),
+                                                        maskImageCropped)
+                                previousLetterFinishCol = cTwoOrigFirstCharsEndCol
+                            # TODO: Here we already have imported 2 characters (in full reconstruct mode)!
+                            #          ++++++ 1. we need to exclude these 2 special chars from the imported characters number report and checks
+                            #          ++++++ 2. we need to keep these characters' properties before starting changing stuff.
+
+                            importedNumOfLetters = 0
                             # open the copy .font file to  modify it
                             # First look for copy file and create it if it does not exist and open it
                             transSpeechInfoFile = None
@@ -1147,9 +1181,12 @@ class grabberFromPNG:
                                                                             newLetterBottRow),
                                                                     maskImageCropped)
                                             importedNumOfLetters += 1
-                                            copyFontFile.seek(firstTableLineOffset +  (existingSizeOfTableInOrigImage + importedNumOfLetters -1 )* 16 )     #nea grammi
+                                            if self.reconstructEntireFont == False:   # only if not reconstructing the entire font.
+                                                copyFontFile.seek(firstTableLineOffset +  (existingSizeOfTableInOrigImage + importedNumOfLetters -1 )* 16 )     #nea grammi
+                                            else:
+                                                copyFontFile.seek(firstTableLineOffset + (2 + importedNumOfLetters -1 )* 16)  # 2: to ignore the first two special original characters we have kept!
                                             # # adding +1 in all coords for letter box because there is a +1 difference (png has 0,0 start and .font has 1,1)
-                                            newLetterLeftColToWrite = pack('h',newLetterLeftCol+1-1) # -1 because the engine seems to be want the pixel column before the start of the letter, otherwise it purges its first column
+                                            newLetterLeftColToWrite = pack('h',newLetterLeftCol+1-1) # -1 because the engine seems to require the pixel column before the start of the letter, otherwise it purges its first column
                                             copyFontFile.write(newLetterLeftColToWrite)
                                             newBOX_LetterTopRowToWrite = pack('h', curHeightForNextAppend+1 )
                                             copyFontFile.write(newBOX_LetterTopRowToWrite)
@@ -1158,9 +1195,15 @@ class grabberFromPNG:
                                             newBOX_LetterBottRowToWrite = pack('h', curHeightForNextAppend + origGameFontDiakenoHeight ) ##old
                                             copyFontFile.write(newBOX_LetterBottRowToWrite)
 
-                                            pixelsWithinLetterBoxFromLeftToLetterInt = 0
-                                            kerningLetterInt = 0
+                                            # TODO: FUTURE: since in reconstructing the entire font we change the width and placement of the original characters in the boxes,
+                                            #       maybe it won't be correct to keep the original kerningLetterInt and pixelsWithinLetterBoxFromLeftToLetterInt for the original letters (?)
+                                            if (self.reconstructEntireFont == False) \
+                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                pixelsWithinLetterBoxFromLeftToLetterInt = 0
+                                                kerningLetterInt = 0
+
                                             widthTargetLangInt = (c_endCol-c_startCol) + 1
+
                                             #
                                             # ITALICS MODE!
                                             # keep indent the same as the original font (engish char, copy)
@@ -1287,17 +1330,27 @@ class grabberFromPNG:
                                                     (pixelsWithinLetterBoxFromLeftToLetterInt, kerningLetterInt )= (0,(widthTargetLangInt-1))
 
 
-                                            pixelsWithinLetterBoxFromLeftToLetterToWrite = pack('h', pixelsWithinLetterBoxFromLeftToLetterInt)
-                                            copyFontFile.write(pixelsWithinLetterBoxFromLeftToLetterToWrite)
+                                            if (self.reconstructEntireFont == False) \
+                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                pixelsWithinLetterBoxFromLeftToLetterToWrite = pack('h', pixelsWithinLetterBoxFromLeftToLetterInt)
+                                                copyFontFile.write(pixelsWithinLetterBoxFromLeftToLetterToWrite)
+                                            else: # seek to the next 2 bytes
+                                                copyFontFile.seek(firstTableLineOffset + (importedNumOfLetters -1 )* 16 + 10)
 
+                                            # width is updated whether we reconstruct the font or simply append
                                             widthLetterToWrite = pack('h', widthTargetLangInt)
                                             copyFontFile.write(widthLetterToWrite)
 
-                                            if italicsMode == False:
-                                                kerningLetterInt = (widthTargetLangInt-1)
+                                            if (self.reconstructEntireFont == False) \
+                                                or (self.reconstructEntireFont == True and (importedNumOfLetters ) > existingSizeOfTableInOrigImage ) :   # only if not reconstructing the entire font.
+                                                if italicsMode == False:
+                                                    kerningLetterInt = (widthTargetLangInt-1)
 
-                                            kerningLetterToWrite = pack('h', kerningLetterInt )
-                                            copyFontFile.write(kerningLetterToWrite)
+                                                kerningLetterToWrite = pack('h', kerningLetterInt )
+                                                copyFontFile.write(kerningLetterToWrite)
+                                            else: # seek to the next 2 bytes
+                                                copyFontFile.seek(firstTableLineOffset + (importedNumOfLetters -1 )* 16 + 14)
+
                                             dummyZerosToWrite = pack('h', 0)
                                             copyFontFile.write(dummyZerosToWrite)
 
@@ -1381,11 +1434,13 @@ class grabberFromPNG:
         firstTableLineOffset = self.PNG_TABLE_STARTLINE_OFFSET
         retList =[]
         activeFontFile = None
+        activeFontFileSize = 0
         ioErrorFound = False
         if boolOrigFile == True:
             ## open the original font file
             if os.access(self.origFontFilename, os.F_OK):
                 try:
+                    activeFontFileSize = os.path.getsize(self.origFontFilename)
                     activeFontFile = open(self.origFontFilename, 'rb')
                 except:
                     ioErrorFound = True
@@ -1395,6 +1450,7 @@ class grabberFromPNG:
             ## open the created extended font file
             if os.access(self.copyFontFileName, os.F_OK):
                 try:
+                    activeFontFileSize = os.path.getsize(self.copyFontFileName)
                     activeFontFile = open(self.copyFontFileName, 'rb')
                 except:
                     ioErrorFound = True
@@ -1408,20 +1464,24 @@ class grabberFromPNG:
             tmpSizeOfTableWithFontsIndexedToImage = unpack('B',activeFontFile.read(1))
             existingSizeOfTableInActiveImage =  tmpSizeOfTableWithFontsIndexedToImage[0]
             for i in range(0,existingSizeOfTableInActiveImage):
-                activeFontFile.seek(firstTableLineOffset + i* 0x10)
-                tmpColStart = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpRowStart = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpColEnd = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpRowEnd = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpPixelsWithinLetterBoxFromLeftToLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpWidthLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpKerningLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
-                tmpChar = '0'
-                if(i >= 0x0 and i <= (self.lettersInOriginalFontFile - 1) ):
-                    tmpChar = self.replacePngIndexForOrigChars[i]
-                if(i >= self.lettersInOriginalFontFile):
-                    tmpChar = self.rev_replacePngIndexWithCorrAsciiChar[i]
-                retList.append((tmpColStart[0], tmpRowStart[0], tmpColEnd[0], tmpRowEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0], tmpChar))
+#                print i, existingSizeOfTableInActiveImage, boolOrigFile
+                if((firstTableLineOffset + i* 0x10 ) < activeFontFileSize):
+                    activeFontFile.seek(firstTableLineOffset + i* 0x10)
+                    tmpColStart = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpRowStart = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpColEnd = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpRowEnd = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpPixelsWithinLetterBoxFromLeftToLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpWidthLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpKerningLetter = unpack('h',activeFontFile.read(2))    # unpack always returns a tuple
+                    tmpChar = '0'
+                    if(i >= 0x0 and i <= (self.lettersInOriginalFontFile - 1) ):
+                        tmpChar = self.replacePngIndexForOrigChars[i]
+                    if(i >= self.lettersInOriginalFontFile):
+                        tmpChar = self.rev_replacePngIndexWithCorrAsciiChar[i]
+                    retList.append((tmpColStart[0], tmpRowStart[0], tmpColEnd[0], tmpRowEnd[0], tmpPixelsWithinLetterBoxFromLeftToLetter[0], tmpWidthLetter[0], tmpKerningLetter[0], tmpChar))
+                else:
+                    break
             activeFontFile.close()
         return retList
 
