@@ -383,12 +383,33 @@ class grabberFromPNG:
         #
         # TODO: Inform of CRITICAL Error if not found! THEN EXIT????
         # TODO: DB initialization (Should happen once, not every time!)
+        # TODO: v4.95 append an extra column for settings where we store a json dictionary of settings (or an empty string). "ALTER TABLE settings ADD column jsonsettings TEXT DEFAULT "" "
+        #       check for the existence of this column....
+
+
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
             #debug
             print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
         else:
             conn = sqlite3.connect(self.DBFileNameAndRelPath)
             c = conn.cursor()
+            ##print "checking for JSON"
+            c.execute('''PRAGMA table_info('settings')''')
+            foundJSONSettingsColumn = False
+            for row in c:
+                for keyi in row:
+                    if keyi == "jsonsettings":  # we could also check only against row[1] that is the column names, but why bother? lol
+                        foundJSONSettingsColumn = True
+                        break
+            if not foundJSONSettingsColumn:
+                ##print "Not found JSON"
+                c.execute('''ALTER TABLE settings ADD column jsonsettings TEXT DEFAULT ""''')
+                ##print "altered JSON"
+
+            #c.execute('''select jsonsettings from settings''')
+            #print "selected JSON"
+            #for row in c:
+            #    print row[0]
 
             # retrieval of the required values from the DB!
             c.execute('''select encoding, charString from langSettings''')
