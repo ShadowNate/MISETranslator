@@ -1072,7 +1072,7 @@ class MyMainWindow(QtGui.QMainWindow):
         tmpOpenFile.write(encodedList)
         tmpOpenFile.flush()
         tmpOpenFile.close()
-        print "Export Pending lines: Exported %d lines to %s " % (len(objListOfPending) - 2, metaFileName)
+        #print "Export Pending lines: Exported %d lines to %s " % (len(objListOfPending) - 2, metaFileName)
         return
 
 
