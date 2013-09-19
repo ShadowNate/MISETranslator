@@ -11,6 +11,7 @@ import time
 import re
 import hashlib
 import sqlite3
+from math import trunc
 
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
@@ -30,7 +31,7 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
-# TODO: Remember the width of columns of last session before closing app. Remember screen resolution.
+# TODO: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5?
 # TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
 # TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
 # TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
@@ -309,6 +310,58 @@ listOfLabelsSpeechInfoOrig = [] # for MI2
 ###############################
 ###################################
 
+class MISEQuoteTableView(QtGui.QTableView):
+    """
+    A QTableView for displaying the quotes and editing the translation
+    """
+    _autoresize = True
+    def __init__(self, parent=None):
+        QtGui.QTableView.__init__(self, parent)
+#        self.init_variables()
+#        self.setShowGrid(False)
+#        self.verticalHeader().hide()
+#        self.verticalHeader().setDefaultSectionSize(20)
+#        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+#        self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        self.setSizePolicy(sizePolicy)
+        self.setGeometry(27, 130, 1095, 626)
+        self.setFont(QtGui.QFont('Arial', 10))
+        self.setAlternatingRowColors(True)
+        self.horizontalHeader().setCascadingSectionResizes(True)
+        self.horizontalHeader().setDefaultSectionSize(400)
+        self.horizontalHeader().setHighlightSections(True)
+        self.horizontalHeader().setMinimumSectionSize(2)
+        self.horizontalHeader().setStretchLastSection(False)
+        self.verticalHeader().setCascadingSectionResizes(True)
+        self.verticalHeader().setDefaultSectionSize(40)
+        self.verticalHeader().setMinimumSectionSize(10)
+        self.verticalHeader().setStretchLastSection(False)
+#        connect(self, SIGNAL('doubleClicked (const QModelIndex &)'), self.revisionActivated)
+        self._autoresize = True
+#        connect(self.horizontalHeader(), SIGNAL('sectionResized(int, int, int)'), self.disableAutoResize)
+
+    def resizeEvent(self, event):
+        # we catch this event to resize smartly tables' columns
+        QtGui.QTableView.resizeEvent(self, event)
+        if self._autoresize:
+            self.resizeColumns(event.oldSize(), event.size())
+
+    def resizeColumns(self, oldSize, newSize):
+        # resize columns handling
+        model = self.model()
+        if not model:
+            ##print "DEBUG: no resize no model"
+            return
+        elif self._autoresize:
+            ##print "DEBUG: resizing columns because table was resized from (%d, %d) to (%d, %d)" % (oldSize.width(), oldSize.height() ,newSize.width(), newSize.height() )
+            self.emit(SIGNAL("resize(int, int)"), oldSize.width(), newSize.width()) # to be handled in the main class
+        return
+#
+# END OF SUBCLASSING QTABLEVIEW
+#
 # TODO: validate the selected encoding?
 
 #class for handling the GUI
@@ -345,7 +398,8 @@ class MyMainWindow(QtGui.QMainWindow):
     localGrabInstance = None
 
 
-
+    statusLoadingAFile = False
+    ignoreQuoteTableResizeEventFlg = False
 
 
     MESSAGE = "<p>This is a sample info message! " \
@@ -364,7 +418,9 @@ class MyMainWindow(QtGui.QMainWindow):
             return False
 
 
-    def __init__(self):
+    def __init__(self, parent = None):
+        self.statusLoadingAFile = False
+        self.ignoreQuoteTableResizeEventFlg = False
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
         else:
@@ -372,8 +428,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.DBFileNameAndRelPath = os.path.join(self.relPath,self.DBFileName)
         #print self.DBFileNameAndRelPath
-        QtGui.QMainWindow.__init__(self)
-
+        #qtWindow init was here...
         ##uiFilePath = os.path.join(self.relPath, self.uiFileName)
         uiFilePath = os.path.join(self.relPath, self.uiFolderName, self.uiFileName)
         #print uiFilePath
@@ -381,8 +436,31 @@ class MyMainWindow(QtGui.QMainWindow):
             print "Could not find the required ui file %s for the application. Quiting..." % (self.uiFileName)
             sys.exit(0)
 
+
+        #
+        #
+        # TODO: check if the desired screen number exists.
+        # TODO: get resolution of target screen check if similar. Else, show in the center? (or show always in the center)
+        screen_number = 0 #2 is an example, this is 3th screen, because screens are numbered from 0
+        parentScreen = QtGui.QApplication.desktop().screen(0x00) # QWidget *
+        is_virtual_desktop = QtGui.QApplication.desktop().isVirtualDesktop()  # bool
+        #
+        print "is virtual desktop: ", is_virtual_desktop
+        bottom_left = QtGui.QApplication.desktop().screenGeometry(0).bottomLeft() #QPoint
+
+        if is_virtual_desktop:
+            bottom_left = QtGui.QApplication.desktop().screenGeometry(screen_number).bottomLeft()
+        else:
+            parentScreen = QtGui.QApplication.desktop().screen(screen_number)
+
+        QtGui.QMainWindow.__init__(self, parentScreen)
+
+
         # Set up the user interface from Designer.
         self.ui = uic.loadUi(uiFilePath)
+        #if is_virtual_desktop :
+        #    self.ui.move( bottom_left )
+
         self.ui.show()
 
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
@@ -526,6 +604,20 @@ class MyMainWindow(QtGui.QMainWindow):
         self.fillCmBxWithSupportedGames()
         self.ui.selectedEncodingTxtBx.setText(self.tryEncoding)
         self.ui.selectedEncodingTxtBx.setReadOnly(True)
+
+        #self.ui.quoteTableViewPlcHldr.hide()
+        self.ui.gridLayout_2.removeWidget(self.ui.quoteTableViewPlcHldr)
+        self.ui.quoteTableViewPlcHldr.setParent(None)
+        self.ui.quoteTableViewPlcHldr = None
+
+        self.quoteTableView = MISEQuoteTableView(self.ui)
+        self.ui.gridLayout_2.addWidget(self.quoteTableView, 4, 1, 1, 8)
+        self.quoteTableView.show()
+        tableHeaderViewInst = self.quoteTableView.horizontalHeader();
+        tableHeaderViewInst.setStretchLastSection(False)
+        tableHeaderViewInst.connect(tableHeaderViewInst, QtCore.SIGNAL('sectionResized(int , int , int )'),  self.handleColumnsResized)
+        self.quoteTableView.connect(self.quoteTableView, QtCore.SIGNAL('resize(int, int)'),  self.tableViewResizeEvent)
+
 #        self.ui.connect(self, QtCore.SIGNAL('triggered()'), self.closeEvent)
 
     #
@@ -606,9 +698,9 @@ class MyMainWindow(QtGui.QMainWindow):
                 QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
                 return
             else:
-                indexToSelect = self.ui.quoteTableView.model().index(rowToGo, 1, QModelIndex())
-                self.ui.quoteTableView.setCurrentIndex(indexToSelect)
-                self.ui.quoteTableView.setFocus()
+                indexToSelect = self.quoteTableView.model().index(rowToGo, 1, QModelIndex())
+                self.quoteTableView.setCurrentIndex(indexToSelect)
+                self.quoteTableView.setFocus()
         elif ok and self.parseInt(text) == None:
             QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
             return
@@ -623,14 +715,14 @@ class MyMainWindow(QtGui.QMainWindow):
         plithosOfQuotesChanged = 0
         plithosOfQuotesMarked = 0
 
-        lm = self.ui.quoteTableView.model()
+        lm = self.quoteTableView.model()
         lmRows = lm.rowCount()
         lmCols = lm.columnCount()
         for rowi in range(0,lmRows):
             for columni in range (2,lmCols):
                 indexChkBx = lm.index(rowi, columni, QModelIndex())
                 itemChkBx = lm.itemFromIndex(indexChkBx)
-                datoTmp = self.ui.quoteTableView.model().data(indexChkBx).toPyObject()
+                datoTmp = self.quoteTableView.model().data(indexChkBx).toPyObject()
                 if datoTmp == True:
                     if columni == 2: # pending
                         plithosOfQuotesMarked +=1
@@ -879,8 +971,8 @@ class MyMainWindow(QtGui.QMainWindow):
             tmpOpenFile = open(pFullPathfileName, "wb")
             try:
                 for rowi in range(0,pPlithosOfQuotes):
-                    index =  self.ui.quoteTableView.model().index(rowi, pColumnId, QModelIndex())
-                    datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+                    index =  self.quoteTableView.model().index(rowi, pColumnId, QModelIndex())
+                    datoTmp = self.quoteTableView.model().data(index).toPyObject()
                     myASCIIString = unicode.encode("%s" % datoTmp, 'utf-8')
                     myASCIIString=myASCIIString.replace("\n", "0x0A")
                     tmpOpenFile.write("%s\n" % (myASCIIString))
@@ -929,7 +1021,7 @@ class MyMainWindow(QtGui.QMainWindow):
             linesToImport = self._file_len(filename)
             tmpOpenFile = open(filename, 'rb')
             for rowi in range(0,plithosOfQuotes):
-                index =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
+                index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
                 if(rowi < linesToImport):
                     try:
                         nextline = tmpOpenFile.readline()
@@ -943,7 +1035,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     nextline = ""
                     numOfimportedEmptyPaddingLines +=1
                 ##print "%s" s% (nextline)
-                self.ui.quoteTableView.model().setData(index, str.decode("%s" % nextline, 'utf-8'))  # unicode(nextline, self.localGrabInstance.getActiveEncoding()))
+                self.quoteTableView.model().setData(index, str.decode("%s" % nextline, 'utf-8'))  # unicode(nextline, self.localGrabInstance.getActiveEncoding()))
 
 
             tmpOpenFile.close()
@@ -993,13 +1085,13 @@ class MyMainWindow(QtGui.QMainWindow):
 
         plithosOfQuotesMarked = 0
 
-        lm = self.ui.quoteTableView.model()
+        lm = self.quoteTableView.model()
         lmRows = lm.rowCount()
         lmCols = lm.columnCount()
         for rowi in range(0,lmRows):
             indexChkBx = lm.index(rowi, 2, QModelIndex()) # column 2: pending
             itemChkBx = lm.itemFromIndex(indexChkBx)
-            datoTmp = self.ui.quoteTableView.model().data(indexChkBx).toPyObject()
+            datoTmp = self.quoteTableView.model().data(indexChkBx).toPyObject()
             if datoTmp == True:
                 plithosOfQuotesMarked +=1
                 listOfLinesForPendingMarked.append(rowi)
@@ -1192,9 +1284,9 @@ class MyMainWindow(QtGui.QMainWindow):
                     if unicode(myParsedQuotesList[rowi][0], self.activeEnc) == unicode(listOfForeignLinesOrigSpeechInfo[rowi][0], self.activeEnc) :
                         numOfQuotesNotImported +=1
                     else:
-                        lm = self.ui.quoteTableView.model()
+                        lm = self.quoteTableView.model()
                         numOfQuotesChangedInImportedFile+=1
-                        indexOfQuoteInTable =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
+                        indexOfQuoteInTable =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
                         datoTmp = lm.data(indexOfQuoteInTable).toPyObject()
                         if "%s" % (datoTmp) <> unicode(listOfForeignLinesOrigSpeechInfo[rowi][0], self.activeEnc):
                             #both lines (existing and imported are changed so there may be conflict.
@@ -1226,7 +1318,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     if(pendLinesList <> None and len(pendLinesList) > 2):
                         # essentially go through all lines in list and mark them
                         for rownum in pendLinesList[2:]:
-                            indexOfQuoteInTable =  self.ui.quoteTableView.model().index(rownum, 1, QModelIndex())
+                            indexOfQuoteInTable =  self.quoteTableView.model().index(rownum, 1, QModelIndex())
                             self.setPendingItem(indexOfQuoteInTable)
 
 
@@ -1304,7 +1396,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     if(pendLinesList <> None and len(pendLinesList) > 2):
                         # essentially go through all lines in list and mark them
                         for rownum in pendLinesList[2:]:
-                            indexOfQuoteInTable =  self.ui.quoteTableView.model().index(rownum, 1, QModelIndex())
+                            indexOfQuoteInTable =  self.quoteTableView.model().index(rownum, 1, QModelIndex())
                             self.setPendingItem(indexOfQuoteInTable)
 
 
@@ -1396,9 +1488,9 @@ class MyMainWindow(QtGui.QMainWindow):
         del listOfLabelsSpeechInfoOrig[:]
 
         self.ui.numOfEntriesOrigTxtBx.setText(u"0")
-        if self.ui.quoteTableView.model() <> None:
-            self.ui.quoteTableView.model().clear()
-        self.ui.quoteTableView.clearSpans()
+        if self.quoteTableView.model() <> None:
+            self.quoteTableView.model().clear()
+        self.quoteTableView.clearSpans()
 ##		MyMainWindow.MESSAGE = "<p>This will load the selected PNG file in : " \
 ##					"One.</p>" \
 ##					"<p>Two " \
@@ -1524,9 +1616,9 @@ class MyMainWindow(QtGui.QMainWindow):
 ###                    print "uh oh! %s " % index.model().data(index).toBool() #
 ###                lm.setItem(rowi,columni,tmpItem)
 
-        self.ui.quoteTableView.setItemDelegateForColumn(2,self.custDelegate )
-        self.ui.quoteTableView.setItemDelegateForColumn(3,self.custDelegate )
-        self.ui.quoteTableView.setItemDelegateForColumn(4,self.custDelegate )
+        self.quoteTableView.setItemDelegateForColumn(2,self.custDelegate )
+        self.quoteTableView.setItemDelegateForColumn(3,self.custDelegate )
+        self.quoteTableView.setItemDelegateForColumn(4,self.custDelegate )
 
 ##
 ##        for rowi in range(0,plithosOfQuotes):
@@ -1543,11 +1635,15 @@ class MyMainWindow(QtGui.QMainWindow):
 ##                    __tmpItem.setEnabled(False)
 ##                lm.setItem(rowi,columni,__tmpItem)
         lm.connect(lm, QtCore.SIGNAL('itemChanged( QStandardItem *)'),  self.handleChangedItem)
+
+
        # QtCore.QObject.connect(lm, QtCore.SIGNAL("itemChanged(const QModelIndex)"), self.handleChangedItem)
-        self.ui.quoteTableView.setModel(lm)
-        self.ui.quoteTableView.resizeColumnToContents(2)
-        self.ui.quoteTableView.resizeColumnToContents(3)
-        self.ui.quoteTableView.resizeColumnToContents(4)
+        self.statusLoadingAFile = True
+        self.quoteTableView.setModel(lm)
+        self.restoreSessionSavedColumSizes() # this will do something only if something was saved from a last session.
+        self.statusLoadingAFile = False
+
+
 
 #   Saves the edited quotes to a copy file
 #   Distinct cases for the various file types and games
@@ -1559,13 +1655,171 @@ class MyMainWindow(QtGui.QMainWindow):
             return
         ##print "column: %d and row:  %d" % (item.column(), item.row())
         indexChangedChkbx = item.index().model().index(item.row(), 3, QModelIndex())
-        datoTmp = self.ui.quoteTableView.model().data(item.index()).toPyObject()
+        datoTmp = self.quoteTableView.model().data(item.index()).toPyObject()
 
         if "%s" % (datoTmp) <> unicode(listOfForeignLinesOrigSpeechInfo[item.row()][0], self.activeEnc):
             indexChangedChkbx.model().setData(indexChangedChkbx, True, Qt.EditRole)
         else:
             indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
 
+
+    def handleColumnsResized(self, columnIndex, oldSize, newSize):
+        lm = self.quoteTableView.model()
+        scrollMargin = self.quoteTableView.autoScrollMargin()
+        lmCols = lm.columnCount()
+        if not self.statusLoadingAFile and not self.ignoreQuoteTableResizeEventFlg and columnIndex < lmCols -1: ## we try not to ignore last column resizes (maximize/restore case fix)
+            #print "%d %d %d" % (columnIndex, oldSize, newSize)
+            totalColumnWidth = 0.0
+            #totalColumnWidth = self.quoteTableView.width() #0.0
+            totalColumnPercentMinusLast = 0.0
+            tableVertHeaderViewInst = self.quoteTableView.verticalHeader()
+            vertHeaderPixels = tableVertHeaderViewInst.width()
+
+            listOfColumnWidths = []
+            del listOfColumnWidths[:]
+            for coli in range(0, lmCols):
+                totalColumnWidth += self.quoteTableView.columnWidth(coli)
+            ##totalColumnWidth -= (vertHeaderPixels + scrollMargin)
+            for coli in range(0, lmCols - 1):
+                totalColumnPercentMinusLast += trunc(100*1000000* self.quoteTableView.columnWidth(coli)/totalColumnWidth)/1000000.0
+                listOfColumnWidths.append( ( coli ,trunc(100*1000000* self.quoteTableView.columnWidth(coli)/totalColumnWidth)/1000000.0)  )
+                #print "getting width %i: %f (%f)" % (coli, self.quoteTableView.columnWidth(coli) , trunc(100*1000000* self.quoteTableView.columnWidth(coli)/totalColumnWidth)/1000000.0)
+
+##            listOfColumnWidths.append( ( lmCols-1 ,trunc(100*100* self.quoteTableView.columnWidth(lmCols-1)/totalColumnWidth)/100.0)  )
+            #print "getting width %i: %f (%f)" % (lmCols-1, self.quoteTableView.columnWidth(lmCols-1) , trunc(100*1000000* self.quoteTableView.columnWidth(lmCols-1)/totalColumnWidth)/1000000.0)
+            #print "Total width : %f" % (totalColumnWidth,)
+
+##                    print "col: %d width: %d percent: %f" % (coli, self.quoteTableView.columnWidth(coli), trunc(100*100* self.quoteTableView.columnWidth(coli)/totalColumnWidth)/100.0 )
+##                else:
+##                    print "col: %d width: %d percent: %f" % (coli, self.quoteTableView.columnWidth(coli), 100 - totalColumnPercentMinusLast)
+
+
+            #
+            #
+            # store in the jsonsettings table of the dbase the new values:
+            # jSettingsDict('columnsSizes') = list()   <--- ((index, percent ), (), (), ())
+            #
+            #
+            # TODO: this code will be called from auto-resize in the beginning, and we don't want to reset the stored values!
+            #       how can we skip this?
+            # TODO: on resize(from edges)/restore/maximize or on minimize are the columns also resized? We don't want to store values then. We need to set the widths to the percentages (if needed).
+            jSettingsDict = dict()
+            jSettingsDict['columnsSizes'] = listOfColumnWidths
+            jSettingsDictJSONed = json.dumps(jSettingsDict)
+
+            if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
+                #debug
+                print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
+            else:
+                conn = sqlite3.connect(self.DBFileNameAndRelPath)
+                c = conn.cursor()
+                ##print "checking for JSON"
+                c.execute("""update settings set jsonsettings=? where id = 1""", (jSettingsDictJSONed,) )
+                conn.commit()
+                c.close()
+##                tableHeaderViewInst = self.quoteTableView.horizontalHeader();
+##                tableHeaderViewInst.setStretchLastSection(False)
+##                tableHeaderViewInst.setStretchLastSection(True)
+##        elif self.statusLoadingAFile:
+##            print "resized while loading. Ignored..."
+##        else:
+##            print "resized last column. Ignored..."
+        return
+
+    # TODO: consider delegate?
+    def tableViewResizeEvent(self, oldWidth, newWidth):
+        if not self.statusLoadingAFile and not self.ignoreQuoteTableResizeEventFlg and oldWidth!=newWidth:
+            #print "tableViewResizeEvent old:%d new:%d" %(oldWidth, newWidth)
+            self.restoreSessionSavedColumSizes(True)
+##        elif self.statusLoadingAFile:
+##            print "Ignored LOADING FILE resize  old:%d new:%d" %(oldWidth, newWidth)
+##        elif self.statusLoadingAFile:
+##            print "IGNORED ignore table resiz  old:%d new:%d" %(oldWidth, newWidth)
+##        elif oldWidth==newWidth:
+##            print "IGNORED equal width old:%d new:%d" %(oldWidth, newWidth)
+
+
+    # TODO: resizing the last column causes a horizontal bar to appear. WHY?!
+    #       maximizing or resizing a window the columns are not resized analogously!
+    def restoreSessionSavedColumSizes(self, fromTableResizeEventCalled = False):
+        noRestoreInfo = True
+        scrollMargin = self.quoteTableView.autoScrollMargin()
+        if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
+            #debug
+            print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
+        else:
+            conn = sqlite3.connect(self.DBFileNameAndRelPath)
+            c = conn.cursor()
+            ##print "checking for JSON"
+            c.execute("""select jsonsettings from settings where id = 1""")
+            row = c.fetchone()
+            conn.commit()
+            c.close()
+            if (row is not None and row[0]!= ""):
+                jSettingsDict = json.loads(row[0])
+                if jSettingsDict.has_key('columnsSizes'):
+                    noRestoreInfo = False
+                    listOfColumnWidths = jSettingsDict['columnsSizes']
+                    # ((index, percent ), (), (), ()) for all columns minus the last one
+                    lm = self.quoteTableView.model()
+                    lmCols = lm.columnCount()
+                    #totalColumnWidth = 0.0
+                    totalColumnWidth = self.quoteTableView.width() #0.0
+                    totalColumnWidthMinusLast = 0.0
+                    # get total width (we could probably get it directly from the qTableView widget
+    #                for coli in range(0, lmCols):
+    #                    totalColumnWidth += self.quoteTableView.columnWidth(coli)
+    #                totalColumnWidth -= scrollMargin # which is not considered in the first case (?)
+                    # set column widths according to the restored values from DB
+                    tableHeaderViewInst = self.quoteTableView.horizontalHeader()
+                    tableVertHeaderViewInst = self.quoteTableView.verticalHeader()
+                    vertHeaderPixels = tableVertHeaderViewInst.width()
+                    totalColumnWidth -= (vertHeaderPixels + scrollMargin)
+                    #print "verhead %d, scrollMarg %d" % (vertHeaderPixels, scrollMargin)
+                    ##tableHeaderViewInst.setStretchLastSection(False)
+                    self.ignoreQuoteTableResizeEventFlg = True
+                    for coli in range(0, lmCols-1):
+                        for itemLst in listOfColumnWidths:
+                            if(itemLst[0] == coli):
+                                self.quoteTableView.setColumnWidth (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
+                                #print "setting width %i: %f " % (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
+                                totalColumnWidthMinusLast += (itemLst[1] * totalColumnWidth ) / 100.0
+                                break
+                    self.quoteTableView.setColumnWidth(lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2 ) # minus 2 seems to be helping not show the bottom horizontal scroll.
+                    self.ignoreQuoteTableResizeEventFlg = False
+                    #print "setting width %i: %f " % (lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2  )
+                    #print "Total width : %f, table %f table minor %f " % (totalColumnWidth, self.quoteTableView.width(), self.quoteTableView.width() - (vertHeaderPixels + scrollMargin))
+                    ##tableHeaderViewInst.setStretchLastSection(True)
+        if noRestoreInfo:
+            ##print "No restore info start"
+            lm = self.quoteTableView.model()
+            lmCols = lm.columnCount()
+#            tableHeaderViewInst.setStretchLastSection(True)
+            self.ignoreQuoteTableResizeEventFlg = True
+            widthForCheckboxColumns = 55
+            totalColumnWidthMinusLast = 0.0
+            totalColumnWidth = self.quoteTableView.width()
+
+            tableVertHeaderViewInst = self.quoteTableView.verticalHeader()
+            vertHeaderPixels = tableVertHeaderViewInst.width()
+            totalColumnWidth  -= (vertHeaderPixels + scrollMargin)
+            remainingColumnWidthToSplit = totalColumnWidth
+            for coli in range(2, lmCols):
+                remainingColumnWidthToSplit -= widthForCheckboxColumns
+            halfRemainingColumnWidth = remainingColumnWidthToSplit/2.0
+            self.quoteTableView.setColumnWidth(0, halfRemainingColumnWidth)
+            self.quoteTableView.setColumnWidth(1, halfRemainingColumnWidth)
+            totalColumnWidthMinusLast += 2*halfRemainingColumnWidth
+            for coli in range(2, lmCols-1):
+                ##self.quoteTableView.resizeColumnToContents(coli)
+                self.quoteTableView.setColumnWidth(coli, widthForCheckboxColumns)
+                totalColumnWidthMinusLast += widthForCheckboxColumns
+            self.quoteTableView.setColumnWidth(lmCols - 1, totalColumnWidth - totalColumnWidthMinusLast - 3)
+            self.ignoreQuoteTableResizeEventFlg = False
+            ##print "No restore info end"
+
+#            tableHeaderViewInst.setStretchLastSection(False)
+        return
 
     def setPendingItem(self, index = None):
         if index == None or index.column() <> 1:
@@ -1588,12 +1842,12 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def _checkforConflicts(self):
         foundConflicts = False
-        lm = self.ui.quoteTableView.model()
+        lm = self.quoteTableView.model()
         lmRows = lm.rowCount()
         for rowi in range(0,lmRows):
             indexChkBx = lm.index(rowi, 4, QModelIndex())
             itemChkBx = lm.itemFromIndex(indexChkBx)
-            datoTmp = self.ui.quoteTableView.model().data(indexChkBx).toPyObject()
+            datoTmp = self.quoteTableView.model().data(indexChkBx).toPyObject()
             if datoTmp == True:
                 foundConflicts = True
                 break
@@ -1668,8 +1922,8 @@ class MyMainWindow(QtGui.QMainWindow):
             deviationOffset = 0 # this is multiples of 0x10 and shows how much we should add or subtract from indexes because of changes in quotes lenght (increases or reductions)
             tmpOpenFile = open(fullcopyFileName, 'r+b')
             for rowi in range(0,plithosOfQuotes):
-                index =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+                index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                datoTmp = self.quoteTableView.model().data(index).toPyObject()
 #                print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
                 myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                 translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
@@ -1754,8 +2008,8 @@ class MyMainWindow(QtGui.QMainWindow):
             deviationOffset = 0 # this is multiples of 0x10 and shows how much we should add or subtract from indexes because of changes in quotes lenght (increases or reductions)
             tmpOpenFile = open(fullcopyFileName, 'r+b')
             for rowi in range(0,plithosOfQuotes):
-                index =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+                index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                datoTmp = self.quoteTableView.model().data(index).toPyObject()
 #                print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
                 myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                 translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
@@ -1841,8 +2095,8 @@ class MyMainWindow(QtGui.QMainWindow):
             fullcopyFileName = self.ui.openTranslatedFileNameTxtBx.text().strip()
             tmpOpenFile = open(fullcopyFileName, 'r+b')
             for rowi in range(0,plithosOfQuotes):
-                index =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+                index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                datoTmp = self.quoteTableView.model().data(index).toPyObject()
                 #print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
                 myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                 translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
@@ -1957,14 +2211,14 @@ class MyMainWindow(QtGui.QMainWindow):
             for rowi in range(0,plithosOfQuotes):
                 index = None
                 if specialFlag_frUiText_overwriteLibraryCategRanges == True and rowi >= 1025 and rowi <= 1264:
-                    index =  self.ui.quoteTableView.model().index(710 + (rowi - 1025), 1, QModelIndex())
-                    indexOverWrite = self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
+                    index =  self.quoteTableView.model().index(710 + (rowi - 1025), 1, QModelIndex())
+                    indexOverWrite = self.quoteTableView.model().index(rowi, 1, QModelIndex())
                     # TODO: update the GUI TOO (---)
-                    self.ui.quoteTableView.model().setData(indexOverWrite, unicode(listOfUntranslatedLinesSpeechInfo[710 + (rowi - 1025)][1], self.activeEnc))
+                    self.quoteTableView.model().setData(indexOverWrite, unicode(listOfUntranslatedLinesSpeechInfo[710 + (rowi - 1025)][1], self.activeEnc))
 
                 else:
-                    index =  self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+                    index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                datoTmp = self.quoteTableView.model().data(index).toPyObject()
                 # print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
                 myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                 translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
@@ -2535,7 +2789,7 @@ class MyMainWindow(QtGui.QMainWindow):
             searchInColumnNumber = 3
 
         startRowOfSearch = 0
-        startRowOfSearchIndex = self.ui.quoteTableView.currentIndex()
+        startRowOfSearchIndex = self.quoteTableView.currentIndex()
         if (search_mode == "next" or search_mode == "start") and search_direction == "down":
             if (startRowOfSearchIndex is not None) :
                 startRowOfSearch = startRowOfSearchIndex.row() + 1
@@ -2553,12 +2807,12 @@ class MyMainWindow(QtGui.QMainWindow):
             startRowOfSearch = plithosOfQuotes - 1
 
 ##        for rowi in range(startRowOfSearch,plithosOfQuotes):
-##            index =  self.ui.quoteTableView.model().index(rowi, searchInColumnNumber, QModelIndex())
-##            datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+##            index =  self.quoteTableView.model().index(rowi, searchInColumnNumber, QModelIndex())
+##            datoTmp = self.quoteTableView.model().data(index).toPyObject()
 ##            if(re.search(keySearchStr, datoTmp)) <> None:
-##                self.ui.quoteTableView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
-##                self.ui.quoteTableView.setCurrentIndex(index)
-##                self.ui.quoteTableView.setFocus()
+##                self.quoteTableView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
+##                self.quoteTableView.setCurrentIndex(index)
+##                self.quoteTableView.setFocus()
 ##                weHadAMatch = True
 ##                break
         untilButWithoutRow = plithosOfQuotes
@@ -2621,29 +2875,29 @@ class MyMainWindow(QtGui.QMainWindow):
             keyStr = keyStr.replace('$',r'\$')
 #        print "%s" % keyStr
         for rowi in searchRange:
-            index =  self.ui.quoteTableView.model().index(rowi, columnNumber, QModelIndex())
-            datoTmp = self.ui.quoteTableView.model().data(index).toPyObject()
+            index =  self.quoteTableView.model().index(rowi, columnNumber, QModelIndex())
+            datoTmp = self.quoteTableView.model().data(index).toPyObject()
             if pFindSpecialLinesMode == None:
                 if(re.search(keyStr, datoTmp, flags=myReFlags)) <> None:
-                    self.ui.quoteTableView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
-                    self.ui.quoteTableView.setCurrentIndex(index)
-                    self.ui.quoteTableView.setFocus()
+                    self.quoteTableView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
+                    self.quoteTableView.setCurrentIndex(index)
+                    self.quoteTableView.setFocus()
                     retBool = True
                     break
             elif pFindSpecialLinesMode == "marked" or  pFindSpecialLinesMode == "conflicted" or pFindSpecialLinesMode == "changed":
                 if datoTmp == True:
-                    indexToSelect = self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                    self.ui.quoteTableView.selectionModel().select(indexToSelect, QItemSelectionModel.ClearAndSelect)
-                    self.ui.quoteTableView.setCurrentIndex(indexToSelect)
-                    self.ui.quoteTableView.setFocus()
+                    indexToSelect = self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                    self.quoteTableView.selectionModel().select(indexToSelect, QItemSelectionModel.ClearAndSelect)
+                    self.quoteTableView.setCurrentIndex(indexToSelect)
+                    self.quoteTableView.setFocus()
                     retBool = True
                     break
             elif pFindSpecialLinesMode == "unchanged":
                 if datoTmp == False:
-                    indexToSelect = self.ui.quoteTableView.model().index(rowi, 1, QModelIndex())
-                    self.ui.quoteTableView.selectionModel().select(indexToSelect, QItemSelectionModel.ClearAndSelect)
-                    self.ui.quoteTableView.setCurrentIndex(indexToSelect)
-                    self.ui.quoteTableView.setFocus()
+                    indexToSelect = self.quoteTableView.model().index(rowi, 1, QModelIndex())
+                    self.quoteTableView.selectionModel().select(indexToSelect, QItemSelectionModel.ClearAndSelect)
+                    self.quoteTableView.setCurrentIndex(indexToSelect)
+                    self.quoteTableView.setFocus()
                     retBool = True
                     break
 
@@ -3104,7 +3358,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 global listOfEnglishLinesSpeechInfo
                 plithosOfQuotes =len(listOfEnglishLinesSpeechInfo)
                 for rowi in range(0,plithosOfQuotes):
-                    index =  self.ui.quoteTableView.model().index(rowi, 2, QModelIndex())
+                    index =  self.quoteTableView.model().index(rowi, 2, QModelIndex())
                     if(index.model().data(index, Qt.DisplayRole).toBool() == True):
                         linenum = index.row()
                         c.execute("""insert into toDoLinesForSession(IDSession, LineNum) values(?,?)""", (str(sessionID), str(linenum) ))

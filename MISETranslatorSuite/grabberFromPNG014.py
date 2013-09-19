@@ -406,10 +406,7 @@ class grabberFromPNG:
                 c.execute('''ALTER TABLE settings ADD column jsonsettings TEXT DEFAULT ""''')
                 ##print "altered JSON"
 
-            #c.execute('''select jsonsettings from settings''')
-            #print "selected JSON"
-            #for row in c:
-            #    print row[0]
+
 
             # retrieval of the required values from the DB!
             c.execute('''select encoding, charString from langSettings''')

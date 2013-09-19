@@ -1,6 +1,8 @@
 *.py[cod]
 *.pfx
 /trampol.sqlite
+/MISETranslatorSuite/*.info
+/MISETranslatorSuite/*.info.meta
 /MISETranslatorSuite/trampol.sqlite
 /MISETranslatorSuite/test/*
 /MISETranslatorSuite/mysessions.txt
