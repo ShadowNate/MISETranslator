@@ -506,6 +506,8 @@ class MyMainWindow(QtGui.QMainWindow):
 ##        self.ui.LoadQuoteFileBtn.clicked.connect(self.loadQuoteFileinTable)
         self.ui.SubmitChangesBtn.clicked.connect(self.saveToLoadedQuoteFile)
         self.ui.FindInQuotesBtn.clicked.connect(self.findNextMatchFromClickedButton)
+        self.ui.replaceInQuotesBtn.clicked.connect(self.replaceOnceMatchClickedButton)
+        self.ui.replaceAllInQuotesBtn.clicked.connect(self.replaceAllMatchClickedButton)
         self.currentSearchKeyword = ""
         self.ui.findStrTxtBx.setText("")
         self.ui.findSearchUpChBx.setChecked(False)
@@ -515,6 +517,13 @@ class MyMainWindow(QtGui.QMainWindow):
         # working shortcuts but overriden by menu actions -so commented out.
 #        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self.ui, self.focusOnFindBox)
 #        QtGui.QShortcut(QtGui.QKeySequence("F3"), self.ui, self.findNextMatchingStrLineInTable)
+        self.SearcHReplaceModesRadioGroup = QButtonGroup()
+        self.SearcHReplaceModesRadioGroup.addButton(self.ui.searchModeRB)
+        self.SearcHReplaceModesRadioGroup.addButton(self.ui.replaceModeRB)
+
+        self.ui.searchModeRB.connect(self.ui.searchModeRB, QtCore.SIGNAL('toggled(bool)'), self.searchModeToggled)
+        self.ui.replaceModeRB.connect(self.ui.replaceModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceModeToggled)
+        self.ui.searchModeRB.toggle()
 
         # todo: Match Case initialise!
         QtCore.QObject.connect(self.ui.selGameCmBx, QtCore.SIGNAL("currentIndexChanged(const QString)"), self.loadSelectedGameID)
@@ -2722,6 +2731,40 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             QtGui.QMessageBox.information(self, "Warning message", "Process Completed, but %d errors were encountered!" % (errorsEncountered))
         return
+
+
+    def searchModeToggled(self, stateChecked):
+        if(stateChecked):
+            ##print "search Mode enabled", self.ui.searchModeRB.isChecked()
+            self.ui.replaceAllInQuotesBtn.hide()
+            self.ui.replaceInQuotesBtn.hide()
+            self.ui.replaceWithStrTxtBx.hide()
+            self.ui.replaceWithLbl.hide()
+            self.ui.findReplaceLbl.setText("Find:")
+        return
+
+    def replaceModeToggled(self, stateChecked):
+        if(stateChecked):
+            ##print "replace Mode enabled", self.ui.replaceModeRB.isChecked()
+            self.ui.replaceAllInQuotesBtn.show()
+            self.ui.replaceInQuotesBtn.show()
+            self.ui.replaceWithStrTxtBx.show()
+            self.ui.replaceWithLbl.show()
+            self.ui.findReplaceLbl.setText("Replace:")
+        return
+
+    def replaceOnceMatchClickedButton(self, checked):
+        ##print "replaceOnceMatch clicked"
+        return
+
+    def replaceAllMatchClickedButton(self, checked):
+        ##print "replaceAllMatch clicked"
+        return
+
+    def findNextMatchFromClickedButton(self, checked):
+        self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None )
+        return
+
 
     # we needed to separate this from findNextMatchingStrLineInTable, because python passed a checked argument (bool) that overrides the value of pFindSpecialLinesMode
     def findNextMatchFromClickedButton(self, checked):

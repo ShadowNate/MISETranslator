@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1141</width>
+    <width>1132</width>
     <height>816</height>
    </rect>
   </property>
@@ -33,6 +33,376 @@
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="6">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Total Lines:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4" rowspan="2" colspan="5">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="font">
+         <font>
+          <kerning>true</kerning>
+         </font>
+        </property>
+        <property name="title">
+         <string/>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <property name="leftMargin">
+          <number>4</number>
+         </property>
+         <property name="topMargin">
+          <number>2</number>
+         </property>
+         <property name="rightMargin">
+          <number>2</number>
+         </property>
+         <property name="bottomMargin">
+          <number>2</number>
+         </property>
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <item row="0" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <property name="sizeConstraint">
+            <enum>QLayout::SetFixedSize</enum>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QGroupBox" name="groupBox_2">
+               <property name="title">
+                <string/>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_3">
+                <property name="leftMargin">
+                 <number>2</number>
+                </property>
+                <property name="topMargin">
+                 <number>2</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>2</number>
+                </property>
+                <item>
+                 <widget class="QRadioButton" name="searchModeRB">
+                  <property name="text">
+                   <string>Search mode</string>
+                  </property>
+                  <property name="autoExclusive">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="replaceModeRB">
+                  <property name="text">
+                   <string>Replace mode</string>
+                  </property>
+                  <property name="autoExclusive">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="gridLayout_4">
+             <property name="sizeConstraint">
+              <enum>QLayout::SetDefaultConstraint</enum>
+             </property>
+             <property name="horizontalSpacing">
+              <number>4</number>
+             </property>
+             <property name="verticalSpacing">
+              <number>2</number>
+             </property>
+             <item row="3" column="3">
+              <widget class="QLineEdit" name="replaceWithStrTxtBx"/>
+             </item>
+             <item row="0" column="5">
+              <widget class="QComboBox" name="OriginalOrTransCmbBx">
+               <item>
+                <property name="text">
+                 <string>Original Text</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Translated Text</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QLabel" name="replaceWithLbl">
+               <property name="text">
+                <string>With:</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>in:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QLineEdit" name="findStrTxtBx"/>
+             </item>
+             <item row="0" column="2">
+              <widget class="QLabel" name="findReplaceLbl">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>45</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>30</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Replace:</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" rowspan="4">
+              <spacer name="verticalSpacer">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>2</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="3" column="1">
+              <spacer name="verticalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>0</width>
+                 <height>23</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="1">
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <item>
+            <widget class="QCheckBox" name="findWrapAroundChBx">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>101</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Wrap around</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="findSearchUpChBx">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>101</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Search up</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="findMatchCaseChBx">
+             <property name="text">
+              <string>Match Case</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="3">
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="2" column="1">
+            <widget class="QPushButton" name="replaceAllInQuotesBtn">
+             <property name="text">
+              <string>Replace all</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="FindInQuotesBtn">
+             <property name="text">
+              <string>Search</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="replaceInQuotesBtn">
+             <property name="text">
+              <string>Replace</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" rowspan="2">
+            <spacer name="verticalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>0</width>
+               <height>55</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="7">
+       <widget class="QLineEdit" name="numOfEntriesOrigTxtBx">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>60</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="cursor">
+         <cursorShape>ArrowCursor</cursorShape>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="acceptDrops">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Number of lines in the original file. You cannot edit this field</string>
+        </property>
+        <property name="whatsThis">
+         <string>This shows the total number of quotes in the original loaded file.</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>5</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="4">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>130</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="3">
+       <widget class="QPushButton" name="backupBtn">
+        <property name="toolTip">
+         <string>Backups the current target file in the target directory. It won't bakup unsubmitted changes.</string>
+        </property>
+        <property name="text">
+         <string>Backup</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="2">
        <widget class="QLineEdit" name="openFileNameTxtBx">
         <property name="acceptDrops">
@@ -197,236 +567,44 @@
         </property>
        </spacer>
       </item>
-      <item row="0" column="6">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Total Lines:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="7">
-       <widget class="QLineEdit" name="numOfEntriesOrigTxtBx">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>50</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>60</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="cursor">
-         <cursorShape>ArrowCursor</cursorShape>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::NoFocus</enum>
-        </property>
-        <property name="acceptDrops">
-         <bool>false</bool>
-        </property>
-        <property name="toolTip">
-         <string>Number of lines in the original file. You cannot edit this field</string>
-        </property>
-        <property name="whatsThis">
-         <string>This shows the total number of quotes in the original loaded file.</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="4" rowspan="2" colspan="5">
+      <item row="2" column="2">
        <widget class="QGroupBox" name="groupBox">
-        <property name="title">
-         <string/>
-        </property>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <property name="spacing">
+            <number>2</number>
            </property>
-           <property name="minimumSize">
-            <size>
-             <width>30</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>30</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Find:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="findStrTxtBx"/>
-         </item>
-         <item row="0" column="3">
-          <widget class="QComboBox" name="OriginalOrTransCmbBx">
            <item>
-            <property name="text">
-             <string>Original Text</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Translated Text</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="0" column="4">
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QCheckBox" name="findWrapAroundChBx">
+            <widget class="QLabel" name="label_5">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>101</horstretch>
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
              <property name="text">
-              <string>Wrap around</string>
+              <string>Selected Game:</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="findSearchUpChBx">
+            <widget class="QComboBox" name="selGameCmBx">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>101</horstretch>
+               <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Search up</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="findMatchCaseChBx">
-             <property name="text">
-              <string>Match Case</string>
              </property>
             </widget>
            </item>
           </layout>
-         </item>
-         <item row="0" column="5">
-          <widget class="QPushButton" name="FindInQuotesBtn">
-           <property name="text">
-            <string>Search</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>in:</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <spacer name="horizontalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>5</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="4">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>130</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="2">
-       <widget class="QFrame" name="frame">
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Selected Game:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="selGameCmBx">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
          </item>
          <item>
           <spacer name="horizontalSpacer_5">
@@ -445,57 +623,54 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="label_6">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>2</number>
            </property>
-           <property name="text">
-            <string>Encoding:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="selectedEncodingTxtBx">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>80</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>120</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Encoding:</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="selectedEncodingTxtBx">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>120</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
-       </widget>
-      </item>
-      <item row="1" column="3">
-       <widget class="QPushButton" name="backupBtn">
-        <property name="toolTip">
-         <string>Backups the current target file in the target directory. It won't bakup unsubmitted changes.</string>
-        </property>
-        <property name="text">
-         <string>Backup</string>
-        </property>
        </widget>
       </item>
      </layout>
@@ -507,7 +682,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1141</width>
+     <width>1132</width>
      <height>21</height>
     </rect>
    </property>
