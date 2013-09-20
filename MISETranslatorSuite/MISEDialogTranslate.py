@@ -24,8 +24,9 @@ from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtGui import QCloseEvent
-from  grabberFromPNG014 import grabberFromPNG
-from  tableViewCheckBoxDelegate import CheckBoxDelegate
+from grabberFromPNG014 import grabberFromPNG
+from tableViewCheckBoxDelegate import CheckBoxDelegate
+##from tableViewTextDocDelegate import TextDocDelegate
 from MISEFontsTranslate25 import MyMainFontDLGWindow
 from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
@@ -335,9 +336,9 @@ class MISEQuoteTableView(QtGui.QTableView):
         self.horizontalHeader().setHighlightSections(True)
         self.horizontalHeader().setMinimumSectionSize(2)
         self.horizontalHeader().setStretchLastSection(False)
-        self.verticalHeader().setCascadingSectionResizes(True)
+        self.verticalHeader().setCascadingSectionResizes(False)
         self.verticalHeader().setDefaultSectionSize(40)
-        self.verticalHeader().setMinimumSectionSize(10)
+        self.verticalHeader().setMinimumSectionSize(40)
         self.verticalHeader().setStretchLastSection(False)
 #        connect(self, SIGNAL('doubleClicked (const QModelIndex &)'), self.revisionActivated)
         self._autoresize = True
@@ -1044,7 +1045,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     nextline = ""
                     numOfimportedEmptyPaddingLines +=1
                 ##print "%s" s% (nextline)
-                self.quoteTableView.model().setData(index, str.decode("%s" % nextline, 'utf-8'))  # unicode(nextline, self.localGrabInstance.getActiveEncoding()))
+                self.quoteTableView.model().setData(index, str.decode("%s" % nextline, 'utf-8'), Qt.EditRole)  # unicode(nextline, self.localGrabInstance.getActiveEncoding()))
 
 
             tmpOpenFile.close()
@@ -1312,14 +1313,14 @@ class MyMainWindow(QtGui.QMainWindow):
                                 numOfQuotesImported +=1
                                 myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                                 concatStr = "<<<: " + myASCIIString + "\n" + ">>>: " + myParsedQuotesList[rowi][0]
-                                lm.setData(indexOfQuoteInTable,  unicode(concatStr, self.activeEnc))
+                                lm.setData(indexOfQuoteInTable,  unicode(concatStr, self.activeEnc), Qt.EditRole)
                                 self.setConflictedItem(indexOfQuoteInTable)
                                 pass
                         else:
                             # TODO: clean import case
                             numOfCleanImports +=1
                             numOfQuotesImported +=1
-                            lm.setData(indexOfQuoteInTable, unicode(myParsedQuotesList[rowi][0], self.activeEnc))
+                            lm.setData(indexOfQuoteInTable, unicode(myParsedQuotesList[rowi][0], self.activeEnc), Qt.EditRole)
 
                 if(numOfQuotesInImportedFile>0):
                     pendLinesList =[]
@@ -1531,6 +1532,7 @@ class MyMainWindow(QtGui.QMainWindow):
         lm.setHeaderData(4,Qt.Horizontal, u"Conflicted")
 
         self.custDelegate = CheckBoxDelegate()
+        #self.custTextDocDelegate = TextDocDelegate()
         #
         # retrieve markers for this session!!!
         #
@@ -1563,7 +1565,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 index = lm.index(rowi, columni, QModelIndex())
                 if columni == 0:
 #                    print listOfEnglishLinesSpeechInfo[rowi][1]
-                    lm.setData(index, unicode(listOfEnglishLinesSpeechInfo[rowi][1], self.activeEnc))
+                    lm.setData(index, unicode(listOfEnglishLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
                 elif columni == 1:
 ##                    print localGrabInstance.getActiveEncoding()
 ##                    print listOfEnglishLinesSpeechInfo[rowi][1]
@@ -1572,9 +1574,9 @@ class MyMainWindow(QtGui.QMainWindow):
 ##                    lm.setData(index, unicode("", activeEnc))
                     ##print "uh oh! %d: %s" % (rowi, listOfUntranslatedLinesSpeechInfo[rowi][1])
                     if(rowi < plithosOfUntransQuotes):
-                        lm.setData(index, unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc))
+                        lm.setData(index, unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
                     else:
-                        lm.setData(index, unicode("", self.activeEnc))
+                        lm.setData(index, unicode("", self.activeEnc), Qt.EditRole)
                 elif columni == 2:
                     tmpItem.setEditable(True)
 #                    tmpItem.setCheckable(True)
@@ -1625,6 +1627,7 @@ class MyMainWindow(QtGui.QMainWindow):
 ###                    print "uh oh! %s " % index.model().data(index).toBool() #
 ###                lm.setItem(rowi,columni,tmpItem)
 
+        ##self.quoteTableView.setItemDelegateForColumn(1, self.custTextDocDelegate )
         self.quoteTableView.setItemDelegateForColumn(2,self.custDelegate )
         self.quoteTableView.setItemDelegateForColumn(3,self.custDelegate )
         self.quoteTableView.setItemDelegateForColumn(4,self.custDelegate )
