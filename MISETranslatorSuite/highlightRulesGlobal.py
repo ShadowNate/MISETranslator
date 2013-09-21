@@ -16,7 +16,10 @@ def setSearchHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True,
     qtCaseSens = Qt.CaseSensitive
     if not caseSensitivity:
         qtCaseSens = Qt.CaseInsensitive
-    _hlmodul_highlightingRules[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch)
+    if len(_hlmodul_searchhighlightingRule) == 0:
+        _hlmodul_searchhighlightingRule.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch))
+    else:
+        _hlmodul_searchhighlightingRule[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch)
     updateWatchers()
 
 def addHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1):

@@ -33,6 +33,8 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
+# TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
+       # "fixed", the search keyword overrides the others (it seems at least in practice)
 # DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
 # TODO: Replace should create a report of how many instances were replaced!
 # TODO: Bind Ctrl+H to replace (when it's implemented)
@@ -444,29 +446,7 @@ class MyMainWindow(QtGui.QMainWindow):
             sys.exit(0)
 
 
-        #
-        #
-        # TODO: check if the desired screen number exists.
-        # TODO: get resolution of target screen check if similar. Else, show in the center? (or show always in the center)
-        screen_number = 0 #2 is an example, this is 3th screen, because screens are numbered from 0
-        parentScreen = QtGui.QApplication.desktop().screen(0x00) # QWidget *
-        is_virtual_desktop = QtGui.QApplication.desktop().isVirtualDesktop()  # bool
-        #
-        print "is virtual desktop: ", is_virtual_desktop
-        bottom_left = QtGui.QApplication.desktop().screenGeometry(0).bottomLeft() #QPoint
 
-        if is_virtual_desktop:
-            bottom_left = QtGui.QApplication.desktop().screenGeometry(screen_number).bottomLeft()
-        else:
-            parentScreen = QtGui.QApplication.desktop().screen(screen_number)
-
-        QtGui.QMainWindow.__init__(self, parentScreen)
-
-
-        # Set up the user interface from Designer.
-        self.ui = uic.loadUi(uiFilePath)
-        #if is_virtual_desktop :
-        #    self.ui.move( bottom_left )
 
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
             #check in cleandb subdir too!
@@ -491,6 +471,50 @@ class MyMainWindow(QtGui.QMainWindow):
                 self.tryToCloseWin()
                 sys.exit(0)
 
+
+        #
+        # retrieve DB stored settings if any
+        #
+        conn = sqlite3.connect(self.DBFileNameAndRelPath)
+        c = conn.cursor()
+        ##print "checking for JSON"
+        c.execute("""select jsonsettings from settings where id = 1""")
+        row = c.fetchone()
+        conn.commit()
+        c.close()
+        if (row is not None and row[0]!= ""):
+            self.jSettingsInMemDict = json.loads(row[0])
+
+        # TODO: check if the desired screen number exists.
+        # TODO: get resolution of target screen check if similar. Else, show in the center? (or show always in the center?)
+        screen_number = 0 #2 is an example, this is 3th screen, because screens are numbered from 0
+        parentScreen = QtGui.QApplication.desktop().screen(0x00) # QWidget *
+        is_virtual_desktop = QtGui.QApplication.desktop().isVirtualDesktop()  # bool
+        screenCount =  QtGui.QApplication.desktop().screenCount()
+        primaryScreen =  QtGui.QApplication.desktop().primaryScreen()
+        top_left = QtGui.QApplication.desktop().screenGeometry(0).topLeft() #QPoint
+        #
+        #print "is virtual desktop: ", is_virtual_desktop, screenCount,
+        if(self.jSettingsInMemDict is not None and self.jSettingsInMemDict.has_key('lastDesktopScreenNumber')):
+        #
+            screen_number = self.jSettingsInMemDict['lastDesktopScreenNumber']
+            if(screen_number >= screenCount or screen_number < 0):
+                screen_number = primaryScreen
+
+            if is_virtual_desktop:
+                top_left = QtGui.QApplication.desktop().screenGeometry(screen_number).topLeft()
+            else:
+                parentScreen = QtGui.QApplication.desktop().screen(screen_number)
+        try:
+            QtGui.QMainWindow.__init__(self, parentScreen)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(0x00)
+            QtGui.QMainWindow.__init__(self, parentScreen)
+
+        # Set up the user interface from Designer.
+        self.ui = uic.loadUi(uiFilePath)
+#        if is_virtual_desktop :
+#            self.ui.move( top_left )
 
         self.ui.closingFlag = False
         self.ui.installEventFilter(self)
@@ -632,16 +656,8 @@ class MyMainWindow(QtGui.QMainWindow):
         tableHeaderViewInst.connect(tableHeaderViewInst, QtCore.SIGNAL('sectionResized(int , int , int )'),  self.handleColumnsResized)
         self.quoteTableView.connect(self.quoteTableView, QtCore.SIGNAL('resize(int, int)'),  self.tableViewResizeEvent)
 
-        # retrieve stored settings if any
-        conn = sqlite3.connect(self.DBFileNameAndRelPath)
-        c = conn.cursor()
-        ##print "checking for JSON"
-        c.execute("""select jsonsettings from settings where id = 1""")
-        row = c.fetchone()
-        conn.commit()
-        c.close()
-        if (row is not None and row[0]!= ""):
-            self.jSettingsInMemDict = json.loads(row[0])
+
+
         # in the end show the UI
         self.ui.show()
 
@@ -661,6 +677,13 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.closingFlag = True
             ##print "Saving Session"
             # store session settings
+            if self.jSettingsInMemDict is not None:
+                try:
+                    self.jSettingsInMemDict['lastDesktopScreenNumber'] = QtGui.QApplication.desktop().screenNumber(self)
+                except:
+                    #print "Exception in detecing display"
+                    self.jSettingsInMemDict['lastDesktopScreenNumber'] = 0
+
             if self.jSettingsInMemDict is not None and len(self.jSettingsInMemDict) > 0:
                 ##print "Session has something to save"
                 jSettingsDictJSONed = json.dumps(self.jSettingsInMemDict)
@@ -2760,6 +2783,7 @@ class MyMainWindow(QtGui.QMainWindow):
     ####################################
 
     def initHighlightRules(self):
+        ##return
         keywordFormat = QtGui.QTextCharFormat()
         keywordFormat.setForeground(QtCore.Qt.darkBlue)
         keywordFormat.setFontWeight(QtGui.QFont.Bold)
@@ -5424,8 +5448,6 @@ class MyMainWindow(QtGui.QMainWindow):
         ## DEBUG 4.7
         #print "File {0}. Total commands: {1}, Useful: {2}, Other: {3}, Unknown: {4}, End Script: {5}".format(filename, unknownCommands+unlessEqCommands+otherCommands+endScriptCommands, unlessEqCommands, otherCommands, unknownCommands, endScriptCommands)
         return retval
-
-
 
 #
 #
