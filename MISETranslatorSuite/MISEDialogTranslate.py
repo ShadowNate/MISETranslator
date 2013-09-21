@@ -17,6 +17,7 @@ from math import trunc
 import sip
 sip.setapi('QString', 2)
 import imagesrsc
+import highlightRulesGlobal
 
 
 import sys
@@ -32,11 +33,13 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
+# DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
+# TODO: Replace should create a report of how many instances were replaced!
+# TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5?
 # TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
 # TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
 # TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
-# TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: export to excel ?
 # TODO: import from excel ?
 # TODO: spell-check (aspell? hunspell?)
@@ -423,6 +426,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def __init__(self, parent = None):
         self.statusLoadingAFile = False
         self.jSettingsInMemDict = dict()
+        self.initHighlightRules()
         self.ignoreQuoteTableResizeEventFlg = False
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -695,7 +699,6 @@ class MyMainWindow(QtGui.QMainWindow):
         QtGui.QMessageBox.about(self, "About MISE Series Translator",
                 "This application was built for the fan translation purposes of LucasArt's SoMI:SE and MI2:SE. "
                 "It was made by the Classic Adventures in Greek group and is distributed freely.")
-
 ##
 ##
 ##
@@ -1681,6 +1684,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
        # QtCore.QObject.connect(lm, QtCore.SIGNAL("itemChanged(const QModelIndex)"), self.handleChangedItem)
         self.statusLoadingAFile = True
+        highlightRulesGlobal.clearWatchers()
         self.quoteTableView.setModel(lm)
         self.restoreSessionSavedColumSizes() # this will do something only if something was saved from a last session.
         self.statusLoadingAFile = False
@@ -2750,7 +2754,46 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             QtGui.QMessageBox.information(self, "Warning message", "Process Completed, but %d errors were encountered!" % (errorsEncountered))
         return
+    ####################################
+    # SEARCH FIND REPLACE HIGHLIGHT
+    #
+    ####################################
 
+    def initHighlightRules(self):
+        keywordFormat = QtGui.QTextCharFormat()
+        keywordFormat.setForeground(QtCore.Qt.darkBlue)
+        keywordFormat.setFontWeight(QtGui.QFont.Bold)
+
+        keywordPatterns = ["\\bchar\\b", "\\bclass\\b", "\\bconst\\b",
+                "\\bdouble\\b", "\\benum\\b", "\\bexplicit\\b", "\\bfriend\\b",
+                "\\binline\\b", "\\bint\\b", "\\blong\\b", "\\bnamespace\\b",
+                "\\boperator\\b", "\\bprivate\\b", "\\bprotected\\b",
+                "\\bpublic\\b", "\\bshort\\b", "\\bsignals\\b", "\\bsigned\\b",
+                "\\bslots\\b", "\\bstatic\\b", "\\bstruct\\b",
+                "\\btemplate\\b", "\\btypedef\\b", "\\btypename\\b",
+                "\\bunion\\b", "\\bunsigned\\b", "\\bvirtual\\b", "\\bvoid\\b",
+                "\\bvolatile\\b"]
+
+        for patternExpStr in keywordPatterns:
+            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat)
+
+        classFormat = QtGui.QTextCharFormat()
+        classFormat.setFontWeight(QtGui.QFont.Bold)
+        classFormat.setForeground(QtCore.Qt.darkMagenta)
+        highlightRulesGlobal.addHighlightRule("\\bQ[A-Za-z]+\\b", classFormat)
+
+        singleLineCommentFormat = QtGui.QTextCharFormat()
+        singleLineCommentFormat.setForeground(QtCore.Qt.red)
+        highlightRulesGlobal.addHighlightRule("//[^\n]*", singleLineCommentFormat)
+
+        quotationFormat = QtGui.QTextCharFormat()
+        quotationFormat.setForeground(QtCore.Qt.darkGreen)
+        highlightRulesGlobal.addHighlightRule("\".*\"", quotationFormat)
+
+        functionFormat = QtGui.QTextCharFormat()
+        functionFormat.setFontItalic(True)
+        functionFormat.setForeground(QtCore.Qt.blue)
+        highlightRulesGlobal.addHighlightRule("\\b[A-Za-z0-9_]+(?=\\()", functionFormat)
 
     def searchModeToggled(self, stateChecked):
         if(stateChecked):
@@ -2778,10 +2821,6 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def replaceAllMatchClickedButton(self, checked):
         ##print "replaceAllMatch clicked"
-        return
-
-    def findNextMatchFromClickedButton(self, checked):
-        self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None )
         return
 
 
@@ -2919,6 +2958,8 @@ class MyMainWindow(QtGui.QMainWindow):
             if match_caseFlg == False:
                 myReFlags |= re.IGNORECASE
 
+            if columnNumber > 0:
+                myReFlags |= re.UNICODE #fixes ignorecase state for greek letters!
             # to override the error when the re contains or ends in \
             #keyStr = keyStr.replace('\\','\\\\')
             keyStr = keyStr.replace("\\", r"\\")
@@ -2935,6 +2976,10 @@ class MyMainWindow(QtGui.QMainWindow):
             keyStr = keyStr.replace('}',r'\}')
             keyStr = keyStr.replace('^',r'\^')
             keyStr = keyStr.replace('$',r'\$')
+
+            matchKeyFormat = QtGui.QTextCharFormat()
+            matchKeyFormat.setBackground(QtCore.Qt.green)
+            highlightRulesGlobal.setSearchHighlightRule(keyStr, matchKeyFormat, match_caseFlg, columnNumber)
 #        print "%s" % keyStr
         for rowi in searchRange:
             index =  self.quoteTableView.model().index(rowi, columnNumber, QModelIndex())

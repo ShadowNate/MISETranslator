@@ -6,16 +6,23 @@
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import highlightRulesGlobal
 
 
 class TextDocDelegate(QStyledItemDelegate):
     font = QtGui.QFont()
+    moreFont = QtGui.QFont()
     def __init__(self):
         super(TextDocDelegate, self).__init__()
         self.font = QtGui.QFont()
         self.font.setFamily('Arial')
         self.font.setFixedPitch(True)
         self.font.setPointSize(10)
+        self.moreFont = QtGui.QFont()
+        self.moreFont.setFamily('Arial')
+        self.moreFont.setFixedPitch(True)
+        self.moreFont.setPointSize(8)
+        self.moreFont.setWeight(QFont.Bold)
 
     # override displayText, since otherwise we get duplicates with Paint-ed QTextDocument (which we need for the highlighting)
     def displayText(self, value, locale):
@@ -39,7 +46,7 @@ class TextDocDelegate(QStyledItemDelegate):
         editor = QtGui.QTextEdit(parent)
         editor.setFont(self.font)
 
-        self.highlighter = Highlighter(editor.document())
+        self.highlighter = Highlighter(editor.document(), index.column())
 
         return editor
 
@@ -64,7 +71,7 @@ class TextDocDelegate(QStyledItemDelegate):
 
             doc.setDefaultTextOption(docTextOption)
 #            FilterSyntaxHighlighter* highlighter = new FilterSyntaxHighlighter(regExp, doc);
-            highlighter = Highlighter(doc)
+            highlighter = Highlighter(doc, index.column())
             highlighter.rehighlight()
 
             #QAbstractTextDocumentLayout :: PaintContext context;
@@ -72,24 +79,57 @@ class TextDocDelegate(QStyledItemDelegate):
 
             doc.setPageSize(QSizeF ( option.rect.size()))
             #painter.setClipRect(option.rect);
-            docuRect = self.getTextDocumentRect(option, doc)
+            docuRect, hasMore = self.getTextDocumentRect(option, doc)
+
             painter.setClipRect(docuRect);
             painter.translate( docuRect.x(), docuRect.y() )
             doc.documentLayout().draw(painter,context)
             painter.restore()
+            painter.save()
+            if hasMore:
+                #print "Has More", index.row(), index.column()
+                docMoreNote = QTextDocument()
+                docMoreNote.setPlainText("...")
+                docMoreNote.adjustSize()
+                docMoreNote.setDefaultFont(self.moreFont)
+                docMoreNote.setDocumentMargin(1)
+                docMoreNote.setPageSize(QSizeF ( docMoreNote.size()))
+                docuCornerRect, hasMore = self.getCornerTextDocumentRect(option, docMoreNote)
+                painter.setClipRect(docuCornerRect);
+                painter.translate( docuCornerRect.x(), docuCornerRect.y() )
+                docMoreNote.documentLayout().draw(painter,context)
+
+            painter.restore()
+
+    def getCornerTextDocumentRect(self, option, cornerDocu):
+        hasMore = False
+        docu_point = None
+        docu_croppedSize = None
+        if cornerDocu.size().toSize().height() <= option.rect.height() :
+            docu_point = QPoint (option.rect.x() + option.rect.width() - cornerDocu.size().toSize().width(),
+            					 option.rect.y() +
+            					 (option.rect.height()  - cornerDocu.size().toSize().height()))
+            docu_croppedSize= QSize(cornerDocu.size().toSize().width(), cornerDocu.size().toSize().height()  ) #width, height
+        else:
+            docu_point = QPoint (option.rect.x() + option.rect.width() - cornerDocu.size().toSize().width(), option.rect.y())
+            docu_croppedSize = (cornerDocu.size().toSize().width(), option.rect.height() )
+            hasMore = True
+        return QRect(docu_point, docu_croppedSize), hasMore
 
     def getTextDocumentRect(self, option, textDocu):
+        hasMore = False
         docu_point = None
         docu_croppedSize = None
         if textDocu.size().toSize().height() <= option.rect.height() :
             docu_point = QPoint (option.rect.x(),
             					 option.rect.y() +
-            					 option.rect.height() / 2 - textDocu.size().toSize().height() / 2)
-            docu_croppedSize= QSize(textDocu.size().toSize().width(), option.rect.height() / 2 + textDocu.size().toSize().height() / 2 ) #width, height
+            					 (option.rect.height()  - textDocu.size().toSize().height()) / 2)
+            docu_croppedSize= QSize(textDocu.size().toSize().width(), (option.rect.height()  + textDocu.size().toSize().height()) / 2 ) #width, height
         else:
             docu_point = QPoint (option.rect.x(),option.rect.y())
             docu_croppedSize = QSize(option.rect.width(), option.rect.height() )
-        return QRect(docu_point, docu_croppedSize)
+            hasMore = True
+        return QRect(docu_point, docu_croppedSize), hasMore
 
         ##print "something"
 ##
@@ -124,64 +164,32 @@ class TextDocDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
         return
 
+
+class HighlightingRule:
+    pass
+
 class Highlighter(QtGui.QSyntaxHighlighter):
-    def __init__(self, parent=None):
+
+    parentColNumber = -1
+    def __init__(self, parent=None, pParntColNum=-1):
         super(Highlighter, self).__init__(parent)
-
-        keywordFormat = QtGui.QTextCharFormat()
-        keywordFormat.setForeground(QtCore.Qt.darkBlue)
-        keywordFormat.setFontWeight(QtGui.QFont.Bold)
-
-        keywordPatterns = ["\\bchar\\b", "\\bclass\\b", "\\bconst\\b",
-                "\\bdouble\\b", "\\benum\\b", "\\bexplicit\\b", "\\bfriend\\b",
-                "\\binline\\b", "\\bint\\b", "\\blong\\b", "\\bnamespace\\b",
-                "\\boperator\\b", "\\bprivate\\b", "\\bprotected\\b",
-                "\\bpublic\\b", "\\bshort\\b", "\\bsignals\\b", "\\bsigned\\b",
-                "\\bslots\\b", "\\bstatic\\b", "\\bstruct\\b",
-                "\\btemplate\\b", "\\btypedef\\b", "\\btypename\\b",
-                "\\bunion\\b", "\\bunsigned\\b", "\\bvirtual\\b", "\\bvoid\\b",
-                "\\bvolatile\\b"]
-
-        self.highlightingRules = [(QtCore.QRegExp(pattern), keywordFormat)
-                for pattern in keywordPatterns]
-
-        classFormat = QtGui.QTextCharFormat()
-        classFormat.setFontWeight(QtGui.QFont.Bold)
-        classFormat.setForeground(QtCore.Qt.darkMagenta)
-        self.highlightingRules.append((QtCore.QRegExp("\\bQ[A-Za-z]+\\b"),
-                classFormat))
-
-        singleLineCommentFormat = QtGui.QTextCharFormat()
-        singleLineCommentFormat.setForeground(QtCore.Qt.red)
-        self.highlightingRules.append((QtCore.QRegExp("//[^\n]*"),
-                singleLineCommentFormat))
-
+        highlightRulesGlobal.addHighlighterWatcher(self)
+        self.parentColNumber = pParntColNum
         self.multiLineCommentFormat = QtGui.QTextCharFormat()
         self.multiLineCommentFormat.setForeground(QtCore.Qt.red)
-
-        quotationFormat = QtGui.QTextCharFormat()
-        quotationFormat.setForeground(QtCore.Qt.darkGreen)
-        self.highlightingRules.append((QtCore.QRegExp("\".*\""),
-                quotationFormat))
-
-        functionFormat = QtGui.QTextCharFormat()
-        functionFormat.setFontItalic(True)
-        functionFormat.setForeground(QtCore.Qt.blue)
-        self.highlightingRules.append((QtCore.QRegExp("\\b[A-Za-z0-9_]+(?=\\()"),
-                functionFormat))
-
         self.commentStartExpression = QtCore.QRegExp("/\\*")
         self.commentEndExpression = QtCore.QRegExp("\\*/")
 
     def highlightBlock(self, text):
         #print "checking hight"
-        for pattern, format in self.highlightingRules:
-            expression = QtCore.QRegExp(pattern)
-            index = expression.indexIn(text)
-            while index >= 0:
-                length = expression.matchedLength()
-                self.setFormat(index, length, format)
-                index = expression.indexIn(text, index + length)
+        for pattern, format, forColumnNum in highlightRulesGlobal.getAllHighlightRules():
+            if(self.parentColNumber == forColumnNum):
+                expression = QtCore.QRegExp(pattern)
+                index = expression.indexIn(text)
+                while index >= 0:
+                    length = expression.matchedLength()
+                    self.setFormat(index, length, format)
+                    index = expression.indexIn(text, index + length)
 
         self.setCurrentBlockState(0)
 
