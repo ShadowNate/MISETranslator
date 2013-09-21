@@ -2783,41 +2783,65 @@ class MyMainWindow(QtGui.QMainWindow):
     ####################################
 
     def initHighlightRules(self):
+        highlightRulesGlobal.clearConstantRules()
         ##return
         keywordFormat = QtGui.QTextCharFormat()
         keywordFormat.setForeground(QtCore.Qt.darkBlue)
         keywordFormat.setFontWeight(QtGui.QFont.Bold)
 
-        keywordPatterns = ["\\bchar\\b", "\\bclass\\b", "\\bconst\\b",
-                "\\bdouble\\b", "\\benum\\b", "\\bexplicit\\b", "\\bfriend\\b",
-                "\\binline\\b", "\\bint\\b", "\\blong\\b", "\\bnamespace\\b",
-                "\\boperator\\b", "\\bprivate\\b", "\\bprotected\\b",
-                "\\bpublic\\b", "\\bshort\\b", "\\bsignals\\b", "\\bsigned\\b",
-                "\\bslots\\b", "\\bstatic\\b", "\\bstruct\\b",
-                "\\btemplate\\b", "\\btypedef\\b", "\\btypename\\b",
-                "\\bunion\\b", "\\bunsigned\\b", "\\bvirtual\\b", "\\bvoid\\b",
-                "\\bvolatile\\b"]
+        keywordPatterns = ["\\bBig Whoop\\b",
+                "\\bPhatt\\b", "\\bDinky\\b", "\\bScabb\\b", "\\bBooty\\b",
+                 "\\bDread\\b", "\\bKate\\b", "\\bCapsize\\b", "\\bToothrot\\b", "\\bHerman\\b",
+                 "\\bElaine\\b", "\\bMarley\\b", "\\bAugustus\\b", "\\bDeWaat\\b", "\\bWally\\b", "\\bMarty\\b",
+                  "\\bLargo\\b", "\\bLaGrande\\b", "\\bRapp\\b", "\\bScallion\\b",  "\\bJojo\\b", "\\bStan\\b",
+                  "\\bMonkey Island\\b", "\\bMonkey 1\\b", "\\bMad Monkey\\b", "\\bLong John Silver\\b",
+                  "\\bFink\\b" , "\\bBart\\b",
+                  "\\bJean\\b","\\bLouise\\b","\\bCarrie\\b","\\bJim\\b", "\\bMcDow\\b", "\\bNibbles\\b", "\\bButtonhead\\b", "\\bHank\\b", "\\bPlank\\b", "\\bBill\\b",
+                  "\\bBarney\\b","\\bGout\\b", "\\bFester\\b","\\bLeach\\b", "\\bGordo\\b", "\\bSkunk[-]Eye\\b",
+                  "\\bRICKETTS\\b", "\\bQUAGMYRES\\b", "\\bGROUTS\\b"]
 
         for patternExpStr in keywordPatterns:
-            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat)
+            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = True)
 
-        classFormat = QtGui.QTextCharFormat()
-        classFormat.setFontWeight(QtGui.QFont.Bold)
-        classFormat.setForeground(QtCore.Qt.darkMagenta)
-        highlightRulesGlobal.addHighlightRule("\\bQ[A-Za-z]+\\b", classFormat)
+        keywordPatternsIS = ["\\bguybrush\\b", "\\bthreepwood\\b", "\\blechuck\\b", "\\bchuckie\\b"]
+        for patternExpStr in keywordPatternsIS:
+            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = False)
 
-        singleLineCommentFormat = QtGui.QTextCharFormat()
-        singleLineCommentFormat.setForeground(QtCore.Qt.red)
-        highlightRulesGlobal.addHighlightRule("//[^\n]*", singleLineCommentFormat)
+##        classFormat = QtGui.QTextCharFormat()
+##        classFormat.setFontWeight(QtGui.QFont.Bold)
+##        classFormat.setForeground(QtCore.Qt.darkMagenta)
+##        highlightRulesGlobal.addHighlightRule("\\bQ[A-Za-z]+\\b", classFormat)
+
+##        singleLineCommentFormat = QtGui.QTextCharFormat()
+##        singleLineCommentFormat.setForeground(QtCore.Qt.red)
+##        highlightRulesGlobal.addHighlightRule("//[^\n]*", singleLineCommentFormat)
 
         quotationFormat = QtGui.QTextCharFormat()
         quotationFormat.setForeground(QtCore.Qt.darkGreen)
-        highlightRulesGlobal.addHighlightRule("\".*\"", quotationFormat)
+        #highlightRulesGlobal.addHighlightRule("\"(.*)\"", quotationFormat)
+        highlightRulesGlobal.addHighlightRule( r'[\s]("([^\\"]|\\.)*")|(^"([^\\"]|\\.)*")', quotationFormat)
+        highlightRulesGlobal.addHighlightRule( r"[\s](`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)", quotationFormat)
+        highlightRulesGlobal.addHighlightRule( r"\\n(`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)", quotationFormat)
+        highlightRulesGlobal.addHighlightRule( r"[\s]('([^\\']|\\.)*')|(^'([^\\']|\\.)*')", quotationFormat)
+        highlightRulesGlobal.addHighlightRule( r"([\sA-Za-z0-9]+)0x94", quotationFormat)
 
-        functionFormat = QtGui.QTextCharFormat()
-        functionFormat.setFontItalic(True)
-        functionFormat.setForeground(QtCore.Qt.blue)
-        highlightRulesGlobal.addHighlightRule("\\b[A-Za-z0-9_]+(?=\\()", functionFormat)
+        specialCharsFormat = QtGui.QTextCharFormat()
+        specialCharsFormat.setFontItalic(True)
+        specialCharsFormat.setForeground(QtCore.Qt.blue)
+#        highlightRulesGlobal.addHighlightRule(r"(0x[A-Fa-f0-9]{2})|(\\n)", specialCharsFormat)
+        highlightRulesGlobal.addHighlightRule(r"(0x[A-F0-9]{2})|(\\n)", specialCharsFormat)
+
+# {var:global_269} {string:global_39} {var:local_1}
+        ingameVariablesFormat = QtGui.QTextCharFormat()
+        ingameVariablesFormat.setForeground(QtCore.Qt.red)
+        highlightRulesGlobal.addHighlightRule(r"{var:[^}]*}", ingameVariablesFormat)
+        highlightRulesGlobal.addHighlightRule(r"\{verb:[^\}]*\}", ingameVariablesFormat)
+        highlightRulesGlobal.addHighlightRule(r"\{string:[^\}]*\}", ingameVariablesFormat)
+
+##        functionFormat = QtGui.QTextCharFormat()
+##        functionFormat.setFontItalic(True)
+##        functionFormat.setForeground(QtCore.Qt.blue)
+##        highlightRulesGlobal.addHighlightRule("\\b[A-Za-z0-9_]+(?=\\()", functionFormat)
 
     def searchModeToggled(self, stateChecked):
         if(stateChecked):
@@ -2892,6 +2916,9 @@ class MyMainWindow(QtGui.QMainWindow):
             keySearchStr = self.ui.findStrTxtBx.text().strip()
             #print "keySearchStr"+ keySearchStr
             if keySearchStr == "" or plithosOfQuotes==0:
+                highlightRulesGlobal.clearSearchRule()
+                if(plithosOfQuotes>0):
+                    self.quoteTableView.clearSelection()
                 return
 
             if len(keySearchStr) < 2:

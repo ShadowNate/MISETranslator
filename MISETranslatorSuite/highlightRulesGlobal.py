@@ -52,9 +52,19 @@ def clearAll():
     del _hlmodul_highlighteRulesWatchers[:]
     del _hlmodul_highlightingRules[:]
     del _hlmodul_searchhighlightingRule[:]
+    updateWatchers()
 
 def clearWatchers():
     del _hlmodul_highlighteRulesWatchers[:]
+
+def clearConstantRules():
+    del _hlmodul_highlightingRules[:]
+    updateWatchers()
+
+def clearSearchRule():
+    del _hlmodul_searchhighlightingRule[:]
+    updateWatchers()
+
 
 def main():
     pass
