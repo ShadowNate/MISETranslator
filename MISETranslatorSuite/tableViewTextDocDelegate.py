@@ -183,7 +183,7 @@ class Highlighter(QtGui.QSyntaxHighlighter):
     def highlightBlock(self, text):
         #print "checking hight"
         for pattern, format, forColumnNum in highlightRulesGlobal.getAllHighlightRules():
-            if(self.parentColNumber == forColumnNum):
+            if(self.parentColNumber == forColumnNum or forColumnNum==-1 ):
                 expression = QtCore.QRegExp(pattern)
                 index = expression.indexIn(text)
                 while index >= 0:
