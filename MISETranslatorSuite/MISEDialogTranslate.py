@@ -26,7 +26,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtGui import QCloseEvent
 from grabberFromPNG014 import grabberFromPNG
 from tableViewCheckBoxDelegate import CheckBoxDelegate
-##from tableViewTextDocDelegate import TextDocDelegate
+from tableViewTextDocDelegate import TextDocDelegate
 from MISEFontsTranslate25 import MyMainFontDLGWindow
 from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
@@ -334,7 +334,7 @@ class MISEQuoteTableView(QtGui.QTableView):
         self.horizontalHeader().setCascadingSectionResizes(True)
         self.horizontalHeader().setDefaultSectionSize(400)
         self.horizontalHeader().setHighlightSections(True)
-        self.horizontalHeader().setMinimumSectionSize(2)
+        self.horizontalHeader().setMinimumSectionSize(30)
         self.horizontalHeader().setStretchLastSection(False)
         self.verticalHeader().setCascadingSectionResizes(False)
         self.verticalHeader().setDefaultSectionSize(40)
@@ -378,6 +378,7 @@ class MyMainWindow(QtGui.QMainWindow):
     uiFileName = u'MISEDialogTranslateUIWin.ui'
     uiFontsToolFileName = u'MISEFontsTranslateUIDlg.ui'
     uiRepackerToolFileName = u'MISERepackUIWin.ui'
+    jSettingsInMemDict = None
 
     DBFileNameAndRelPath = ""
     defGameID = 1 # SomiSE
@@ -421,6 +422,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def __init__(self, parent = None):
         self.statusLoadingAFile = False
+        self.jSettingsInMemDict = dict()
         self.ignoreQuoteTableResizeEventFlg = False
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -461,8 +463,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = uic.loadUi(uiFilePath)
         #if is_virtual_desktop :
         #    self.ui.move( bottom_left )
-
-        self.ui.show()
 
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
             #check in cleandb subdir too!
@@ -628,6 +628,20 @@ class MyMainWindow(QtGui.QMainWindow):
         tableHeaderViewInst.connect(tableHeaderViewInst, QtCore.SIGNAL('sectionResized(int , int , int )'),  self.handleColumnsResized)
         self.quoteTableView.connect(self.quoteTableView, QtCore.SIGNAL('resize(int, int)'),  self.tableViewResizeEvent)
 
+        # retrieve stored settings if any
+        conn = sqlite3.connect(self.DBFileNameAndRelPath)
+        c = conn.cursor()
+        ##print "checking for JSON"
+        c.execute("""select jsonsettings from settings where id = 1""")
+        row = c.fetchone()
+        conn.commit()
+        c.close()
+        if (row is not None and row[0]!= ""):
+            self.jSettingsInMemDict = json.loads(row[0])
+        # in the end show the UI
+        self.ui.show()
+
+
 #        self.ui.connect(self, QtCore.SIGNAL('triggered()'), self.closeEvent)
 
     #
@@ -641,6 +655,22 @@ class MyMainWindow(QtGui.QMainWindow):
         if reply == QtGui.QMessageBox.Yes:
             event.accept()
             self.ui.closingFlag = True
+            ##print "Saving Session"
+            # store session settings
+            if self.jSettingsInMemDict is not None and len(self.jSettingsInMemDict) > 0:
+                ##print "Session has something to save"
+                jSettingsDictJSONed = json.dumps(self.jSettingsInMemDict)
+                if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
+                    #debug
+                    print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
+                else:
+                    conn = sqlite3.connect(self.DBFileNameAndRelPath)
+                    c = conn.cursor()
+                    ##print "checking for JSON"
+                    c.execute("""update settings set jsonsettings=? where id = 1""", (jSettingsDictJSONed,) )
+                    conn.commit()
+                    c.close()
+            ##print "Session Saved"
         else:
             event.ignore()
             self.ui.closingFlag = False
@@ -1532,7 +1562,7 @@ class MyMainWindow(QtGui.QMainWindow):
         lm.setHeaderData(4,Qt.Horizontal, u"Conflicted")
 
         self.custDelegate = CheckBoxDelegate()
-        #self.custTextDocDelegate = TextDocDelegate()
+        self.custTextDocDelegate = TextDocDelegate()
         #
         # retrieve markers for this session!!!
         #
@@ -1626,8 +1656,8 @@ class MyMainWindow(QtGui.QMainWindow):
 ##                        index.model().setData(index, False, Qt.EditRole) # no match
 ###                    print "uh oh! %s " % index.model().data(index).toBool() #
 ###                lm.setItem(rowi,columni,tmpItem)
-
-        ##self.quoteTableView.setItemDelegateForColumn(1, self.custTextDocDelegate )
+        self.quoteTableView.setItemDelegateForColumn(0,self.custTextDocDelegate )
+        self.quoteTableView.setItemDelegateForColumn(1,self.custTextDocDelegate )
         self.quoteTableView.setItemDelegateForColumn(2,self.custDelegate )
         self.quoteTableView.setItemDelegateForColumn(3,self.custDelegate )
         self.quoteTableView.setItemDelegateForColumn(4,self.custDelegate )
@@ -1674,10 +1704,13 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
 
-
+    #
+    # TODO handleColumnsResized introduces lag when resizing columns, due to the connects to the DB.
+    # TODO we don't need to constantly save in the DB! Only when closing the app (maintain a jsonsettings self variable), but we should recall settings when needed from the in-mem jsonsettings when loading files etc....
+    #
     def handleColumnsResized(self, columnIndex, oldSize, newSize):
         lm = self.quoteTableView.model()
-        scrollMargin = self.quoteTableView.autoScrollMargin()
+        ##scrollMargin = self.quoteTableView.autoScrollMargin()
         lmCols = lm.columnCount()
         if not self.statusLoadingAFile and not self.ignoreQuoteTableResizeEventFlg and columnIndex < lmCols -1: ## we try not to ignore last column resizes (maximize/restore case fix)
             #print "%d %d %d" % (columnIndex, oldSize, newSize)
@@ -1715,20 +1748,11 @@ class MyMainWindow(QtGui.QMainWindow):
             # TODO: this code will be called from auto-resize in the beginning, and we don't want to reset the stored values!
             #       how can we skip this?
             # TODO: on resize(from edges)/restore/maximize or on minimize are the columns also resized? We don't want to store values then. We need to set the widths to the percentages (if needed).
-            jSettingsDict = dict()
-            jSettingsDict['columnsSizes'] = listOfColumnWidths
-            jSettingsDictJSONed = json.dumps(jSettingsDict)
-
-            if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
-                #debug
-                print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
-            else:
-                conn = sqlite3.connect(self.DBFileNameAndRelPath)
-                c = conn.cursor()
-                ##print "checking for JSON"
-                c.execute("""update settings set jsonsettings=? where id = 1""", (jSettingsDictJSONed,) )
-                conn.commit()
-                c.close()
+            # ???????????????????????????????????????????????????????????
+            # UPDATE COLUMN WIDTHS IN MEM
+            if(self.jSettingsInMemDict is None):
+                self.jSettingsInMemDict= dict
+            self.jSettingsInMemDict['columnsSizes'] = listOfColumnWidths
 ##                tableHeaderViewInst = self.quoteTableView.horizontalHeader();
 ##                tableHeaderViewInst.setStretchLastSection(False)
 ##                tableHeaderViewInst.setStretchLastSection(True)
@@ -1760,48 +1784,40 @@ class MyMainWindow(QtGui.QMainWindow):
             #debug
             print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
         else:
-            conn = sqlite3.connect(self.DBFileNameAndRelPath)
-            c = conn.cursor()
-            ##print "checking for JSON"
-            c.execute("""select jsonsettings from settings where id = 1""")
-            row = c.fetchone()
-            conn.commit()
-            c.close()
-            if (row is not None and row[0]!= ""):
-                jSettingsDict = json.loads(row[0])
-                if jSettingsDict.has_key('columnsSizes'):
-                    noRestoreInfo = False
-                    listOfColumnWidths = jSettingsDict['columnsSizes']
-                    # ((index, percent ), (), (), ()) for all columns minus the last one
-                    lm = self.quoteTableView.model()
-                    lmCols = lm.columnCount()
-                    #totalColumnWidth = 0.0
-                    totalColumnWidth = self.quoteTableView.width() #0.0
-                    totalColumnWidthMinusLast = 0.0
-                    # get total width (we could probably get it directly from the qTableView widget
-    #                for coli in range(0, lmCols):
-    #                    totalColumnWidth += self.quoteTableView.columnWidth(coli)
-    #                totalColumnWidth -= scrollMargin # which is not considered in the first case (?)
-                    # set column widths according to the restored values from DB
-                    tableHeaderViewInst = self.quoteTableView.horizontalHeader()
-                    tableVertHeaderViewInst = self.quoteTableView.verticalHeader()
-                    vertHeaderPixels = tableVertHeaderViewInst.width()
-                    totalColumnWidth -= (vertHeaderPixels + scrollMargin)
-                    #print "verhead %d, scrollMarg %d" % (vertHeaderPixels, scrollMargin)
-                    ##tableHeaderViewInst.setStretchLastSection(False)
-                    self.ignoreQuoteTableResizeEventFlg = True
-                    for coli in range(0, lmCols-1):
-                        for itemLst in listOfColumnWidths:
-                            if(itemLst[0] == coli):
-                                self.quoteTableView.setColumnWidth (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
-                                #print "setting width %i: %f " % (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
-                                totalColumnWidthMinusLast += (itemLst[1] * totalColumnWidth ) / 100.0
-                                break
-                    self.quoteTableView.setColumnWidth(lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2 ) # minus 2 seems to be helping not show the bottom horizontal scroll.
-                    self.ignoreQuoteTableResizeEventFlg = False
-                    #print "setting width %i: %f " % (lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2  )
-                    #print "Total width : %f, table %f table minor %f " % (totalColumnWidth, self.quoteTableView.width(), self.quoteTableView.width() - (vertHeaderPixels + scrollMargin))
-                    ##tableHeaderViewInst.setStretchLastSection(True)
+            #
+            if self.jSettingsInMemDict.has_key('columnsSizes'):
+                noRestoreInfo = False
+                listOfColumnWidths = self.jSettingsInMemDict['columnsSizes']
+                # ((index, percent ), (), (), ()) for all columns minus the last one
+                lm = self.quoteTableView.model()
+                lmCols = lm.columnCount()
+                #totalColumnWidth = 0.0
+                totalColumnWidth = self.quoteTableView.width() #0.0
+                totalColumnWidthMinusLast = 0.0
+                # get total width (we could probably get it directly from the qTableView widget
+#                for coli in range(0, lmCols):
+#                    totalColumnWidth += self.quoteTableView.columnWidth(coli)
+#                totalColumnWidth -= scrollMargin # which is not considered in the first case (?)
+                # set column widths according to the restored values from DB
+                tableHeaderViewInst = self.quoteTableView.horizontalHeader()
+                tableVertHeaderViewInst = self.quoteTableView.verticalHeader()
+                vertHeaderPixels = tableVertHeaderViewInst.width()
+                totalColumnWidth -= (vertHeaderPixels + scrollMargin)
+                #print "verhead %d, scrollMarg %d" % (vertHeaderPixels, scrollMargin)
+                ##tableHeaderViewInst.setStretchLastSection(False)
+                self.ignoreQuoteTableResizeEventFlg = True
+                for coli in range(0, lmCols-1):
+                    for itemLst in listOfColumnWidths:
+                        if(itemLst[0] == coli):
+                            self.quoteTableView.setColumnWidth (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
+                            #print "setting width %i: %f " % (itemLst[0], (itemLst[1] * totalColumnWidth ) / 100.0)
+                            totalColumnWidthMinusLast += (itemLst[1] * totalColumnWidth ) / 100.0
+                            break
+                self.quoteTableView.setColumnWidth(lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2 ) # minus 2 seems to be helping not show the bottom horizontal scroll.
+                self.ignoreQuoteTableResizeEventFlg = False
+                #print "setting width %i: %f " % (lmCols-1, totalColumnWidth - totalColumnWidthMinusLast -2  )
+                #print "Total width : %f, table %f table minor %f " % (totalColumnWidth, self.quoteTableView.width(), self.quoteTableView.width() - (vertHeaderPixels + scrollMargin))
+                ##tableHeaderViewInst.setStretchLastSection(True)
         if noRestoreInfo:
             ##print "No restore info start"
             lm = self.quoteTableView.model()
