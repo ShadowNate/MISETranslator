@@ -34,6 +34,8 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
+# TODO: make extra highlighting optional
+# TDOD: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
 # TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
        # "fixed", the search keyword overrides the others (it seems at least in practice)
 # DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
@@ -556,6 +558,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.searchModeRB.connect(self.ui.searchModeRB, QtCore.SIGNAL('toggled(bool)'), self.searchModeToggled)
         self.ui.replaceModeRB.connect(self.ui.replaceModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceModeToggled)
         self.ui.replaceModeRB.connect(self.ui.replaceRegExModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceRegExModeToggled)
+        self.ui.actionShow_Highlighting.connect(self.ui.actionShow_Highlighting, QtCore.SIGNAL('toggled(bool)'), self.showHideDefaultHighlighing)
         self.ui.searchModeRB.toggle()
 
         # todo: Match Case initialise!
@@ -786,6 +789,8 @@ class MyMainWindow(QtGui.QMainWindow):
         plithosOfQuotesMarked = 0
 
         lm = self.quoteTableView.model()
+        if lm == None:
+            return
         lmRows = lm.rowCount()
         lmCols = lm.columnCount()
         for rowi in range(0,lmRows):
@@ -1779,7 +1784,6 @@ class MyMainWindow(QtGui.QMainWindow):
             # TODO: this code will be called from auto-resize in the beginning, and we don't want to reset the stored values!
             #       how can we skip this?
             # TODO: on resize(from edges)/restore/maximize or on minimize are the columns also resized? We don't want to store values then. We need to set the widths to the percentages (if needed).
-            # ???????????????????????????????????????????????????????????
             # UPDATE COLUMN WIDTHS IN MEM
             if(self.jSettingsInMemDict is None):
                 self.jSettingsInMemDict= dict
@@ -2785,6 +2789,20 @@ class MyMainWindow(QtGui.QMainWindow):
     # SEARCH FIND REPLACE HIGHLIGHT
     #
     ####################################
+    def showHideDefaultHighlighing(self, stateChecked):
+        global listOfEnglishLinesSpeechInfo
+        if(stateChecked):
+            self.initHighlightRules()
+        else:
+            highlightRulesGlobal.clearConstantRules()
+
+        plithosOfQuotes =len(listOfEnglishLinesSpeechInfo)
+        if(plithosOfQuotes>0):
+            lm = self.quoteTableView.model()
+            if lm is not None:
+                lm.emit(SIGNAL("layoutChanged()")) # to force an update in repainting the view
+        return
+
 
     def initHighlightRules(self):
         highlightRulesGlobal.clearConstantRules()
@@ -2894,7 +2912,9 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.findStrTxtBx.setText("")
         highlightRulesGlobal.clearSearchRule()
         if(plithosOfQuotes>0):
-            self.quoteTableView.clearSelection()
+            lm = self.quoteTableView.model()
+            if lm is not None:
+                lm.emit(SIGNAL("layoutChanged()")) # to force an update in repainting the view
         return
 
     #?????????????????
@@ -3441,6 +3461,7 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.menuView.setEnabled(pFlagEnable)
         self.ui.menuSearch.setEnabled(pFlagEnable)
         self.ui.actionReport.setEnabled(pFlagEnable)
+        self.ui.actionShow_Highlighting.setEnabled(pFlagEnable)
         self.ui.actionGotoLine.setEnabled(pFlagEnable)
         self.ui.actionFind.setEnabled(pFlagEnable)
         self.ui.actionFind_Next.setEnabled(pFlagEnable)

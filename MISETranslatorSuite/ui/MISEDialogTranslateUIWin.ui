@@ -771,6 +771,7 @@
      <string>View</string>
     </property>
     <addaction name="actionReport"/>
+    <addaction name="actionShow_Highlighting"/>
    </widget>
    <widget class="QMenu" name="menuSearch">
     <property name="title">
@@ -819,6 +820,9 @@
    <property name="toolTip">
     <string>Show info about this application...</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
   <action name="actionSave_Translation_As">
    <property name="text">
@@ -843,6 +847,9 @@
   <action name="actionQuit_3">
    <property name="text">
     <string>Quit</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::QuitRole</enum>
    </property>
   </action>
   <action name="actionLoad_Translation_File">
@@ -937,6 +944,25 @@
   <action name="actionGotoLine">
    <property name="text">
     <string>Go to line...</string>
+   </property>
+  </action>
+  <action name="actionShow_Highlighting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Highlighting</string>
+   </property>
+  </action>
+  <action name="actionMoree">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Moree.</string>
    </property>
   </action>
  </widget>
