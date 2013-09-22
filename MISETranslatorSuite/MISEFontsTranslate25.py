@@ -239,8 +239,8 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             "Are you sure you want to close this dialogue window?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
-            event.accept()
             self.ui.closingFlag = True
+            event.accept()
         else:
             event.ignore()
             self.ui.closingFlag = False
@@ -248,6 +248,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
     def tryToCloseWin(self):
         if self.ui is not None:
             self.ui.close()
+            #self.close()
 ##        if __name__ == '__main__':
 ##            sys.exit(0)
         return

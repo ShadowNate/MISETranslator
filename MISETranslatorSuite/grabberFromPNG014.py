@@ -22,7 +22,29 @@ import sqlite3
 ## DONE check for existence of files opened (do we do this always?)
 #v012:
 ## DONE: Make compatible with both games MI and MI2:SE! Get input from DB!
-
+# scope function to introduce extra column
+def checkForJSONSettingsColumnAndAddIfNotExists(pDBFileNameAndRelPath):
+    if not os.access(pDBFileNameAndRelPath, os.F_OK) :
+        #debug
+        print "CRITICAL ERROR: The database file %s could not be found!!" % (pDBFileNameAndRelPath)
+    else:
+        conn = sqlite3.connect(pDBFileNameAndRelPath)
+        c = conn.cursor()
+        ##print "checking for JSON"
+        c.execute('''PRAGMA table_info('settings')''')
+        foundJSONSettingsColumn = False
+        for row in c:
+            for keyi in row:
+                if keyi == "jsonsettings":  # we could also check only against row[1] that is the column names, but why bother? lol
+                    foundJSONSettingsColumn = True
+                    break
+        if not foundJSONSettingsColumn:
+            ##print "Not found JSON"
+            c.execute('''ALTER TABLE settings ADD column jsonsettings TEXT DEFAULT ""''')
+        # Save (commit) any changes # probably select queries do not need commit.
+        conn.commit()
+        # Close the cursor
+        c.close()
 #
 class grabberFromPNG:
     origEncoding = 'windows-1252'
@@ -391,22 +413,9 @@ class grabberFromPNG:
             #debug
             print "CRITICAL ERROR: The database file %s could not be found!!" % (self.DBFileNameAndRelPath)
         else:
+            checkForJSONSettingsColumnAndAddIfNotExists(self.DBFileNameAndRelPath)
             conn = sqlite3.connect(self.DBFileNameAndRelPath)
             c = conn.cursor()
-            ##print "checking for JSON"
-            c.execute('''PRAGMA table_info('settings')''')
-            foundJSONSettingsColumn = False
-            for row in c:
-                for keyi in row:
-                    if keyi == "jsonsettings":  # we could also check only against row[1] that is the column names, but why bother? lol
-                        foundJSONSettingsColumn = True
-                        break
-            if not foundJSONSettingsColumn:
-                ##print "Not found JSON"
-                c.execute('''ALTER TABLE settings ADD column jsonsettings TEXT DEFAULT ""''')
-                ##print "altered JSON"
-
-
 
             # retrieval of the required values from the DB!
             c.execute('''select encoding, charString from langSettings''')

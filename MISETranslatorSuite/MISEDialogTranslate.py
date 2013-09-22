@@ -26,7 +26,8 @@ from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtGui import QCloseEvent
-from grabberFromPNG014 import grabberFromPNG
+import grabberFromPNG014    # needed to get the namespace (access global function for adding extra column jsonsettings)
+from grabberFromPNG014 import *  #needed to get the class easier (without the namespace)
 from tableViewCheckBoxDelegate import CheckBoxDelegate
 from tableViewTextDocDelegate import TextDocDelegate
 from MISEFontsTranslate25 import MyMainFontDLGWindow
@@ -429,6 +430,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
 
     def __init__(self, parent = None):
+        self.ui = None
         self.statusLoadingAFile = False
         self.jSettingsInMemDict = dict()
         self.initHighlightRules()
@@ -449,8 +451,6 @@ class MyMainWindow(QtGui.QMainWindow):
             sys.exit(0)
 
 
-
-
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
             #check in cleandb subdir too!
             cleanDBRelPath= os.path.join(self.relPath, "cleandb",self.DBFileName)
@@ -458,18 +458,21 @@ class MyMainWindow(QtGui.QMainWindow):
             # removed attempts to set the (str.decode(encoding) or unicode(.. ,encoding) ) encoding here for cleanDBRelPath since it;s already a unicode object
 
             if os.access(cleanDBRelPath, os.F_OK) :
-                reply = QtGui.QMessageBox.question(self, 'Clean DB copy',
+                # QMessageBox parented at self. Not yet self.ui instance!
+                reply = self.qMsgBoxQuestion('Clean DB copy',
                     "No existing DB was detected in the same folder with the translator app, but a clean DB was detected in the cleandb subdirectory. Do you want to adopt this as your active DB?", QtGui.QMessageBox.Yes |
                     QtGui.QMessageBox.No, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
                     shutil.copyfile(cleanDBRelPath, self.DBFileNameAndRelPath)
                 else:
-                    QtGui.QMessageBox.critical(self, "Database file missing!",
+                # QMessageBox parented at self. Not yet self.ui instance!
+                    self.qMsgBoxCritical("Database file missing!",
                     "The database file %s could not be found. Cannot proceed without a database file. Quiting..." % (self.DBFileNameAndRelPath))
                     self.tryToCloseWin()
                     sys.exit(0)
             else:
-                QtGui.QMessageBox.critical(self, "Database file missing!",
+                # QMessageBox parented at self. Not yet self.ui instance!
+                self.qMsgBoxCritical( "Database file missing!",
                 "The database file %s could not be found. Cannot proceed without a database file. Quiting..." % (self.DBFileNameAndRelPath))
                 self.tryToCloseWin()
                 sys.exit(0)
@@ -478,6 +481,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #
         # retrieve DB stored settings if any
         #
+        grabberFromPNG014.checkForJSONSettingsColumnAndAddIfNotExists(self.DBFileNameAndRelPath)
         conn = sqlite3.connect(self.DBFileNameAndRelPath)
         c = conn.cursor()
         ##print "checking for JSON"
@@ -491,33 +495,43 @@ class MyMainWindow(QtGui.QMainWindow):
         # TODO: check if the desired screen number exists.
         # TODO: get resolution of target screen check if similar. Else, show in the center? (or show always in the center?)
         screen_number = 0 #2 is an example, this is 3th screen, because screens are numbered from 0
-        parentScreen = QtGui.QApplication.desktop().screen(0x00) # QWidget *
+        parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen()) # QWidget *
+        # on virtual desktops this always returns 1!!
+        #print "parent screen num", QtGui.QApplication.desktop().screenNumber(parentScreen)
         is_virtual_desktop = QtGui.QApplication.desktop().isVirtualDesktop()  # bool
         screenCount =  QtGui.QApplication.desktop().screenCount()
-        primaryScreen =  QtGui.QApplication.desktop().primaryScreen()
-        top_left = QtGui.QApplication.desktop().screenGeometry(0).topLeft() #QPoint
+        primaryScreenNum =  QtGui.QApplication.desktop().primaryScreen()
+        top_left = QtGui.QApplication.desktop().screenGeometry(QtGui.QApplication.desktop().primaryScreen()).topLeft() #QPoint
+        bottom_left = QtGui.QApplication.desktop().screenGeometry(QtGui.QApplication.desktop().primaryScreen()).bottomLeft() #QPoint
+
         #
-        #print "is virtual desktop: ", is_virtual_desktop, screenCount,
+
         if(self.jSettingsInMemDict is not None and self.jSettingsInMemDict.has_key('lastDesktopScreenNumber')):
         #
             screen_number = self.jSettingsInMemDict['lastDesktopScreenNumber']
             if(screen_number >= screenCount or screen_number < 0):
-                screen_number = primaryScreen
-
+                screen_number = primaryScreenNum
+                screen_number = primaryScreenNum
             if is_virtual_desktop:
                 top_left = QtGui.QApplication.desktop().screenGeometry(screen_number).topLeft()
+                bottom_left = QtGui.QApplication.desktop().screenGeometry(screen_number).bottomLeft()
             else:
                 parentScreen = QtGui.QApplication.desktop().screen(screen_number)
+        # Set up the user interface from Designer.
         try:
             QtGui.QMainWindow.__init__(self, parentScreen)
         except:
             parentScreen = QtGui.QApplication.desktop().screen(0x00)
             QtGui.QMainWindow.__init__(self, parentScreen)
 
-        # Set up the user interface from Designer.
-        self.ui = uic.loadUi(uiFilePath)
-#        if is_virtual_desktop :
-#            self.ui.move( top_left )
+        print "is virtual desktop: ", is_virtual_desktop, screenCount, screen_number
+        self.ui = uic.loadUi(uiFilePath, self)
+
+        if is_virtual_desktop :
+            self.ui.move( top_left)
+        else:
+            scr = QtGui.QApplication.desktop().screenGeometry(parentScreen)
+            self.ui.move( scr.center() - self.ui.rect().center() )
 
         self.ui.closingFlag = False
         self.ui.installEventFilter(self)
@@ -676,22 +690,23 @@ class MyMainWindow(QtGui.QMainWindow):
     # todo: savesettings qt method?
     #           look-up QSettings Class Reference [QtCore module]
     def closeEvent(self, event):
-        reply = QtGui.QMessageBox.question(self, 'Quit application',
+        reply = self.qMsgBoxQuestion('Quit application',
             "Are you sure you want to quit?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
-            event.accept()
             self.ui.closingFlag = True
+            event.accept()
             ##print "Saving Session"
             # store session settings
             if self.jSettingsInMemDict is not None:
                 try:
-                    self.jSettingsInMemDict['lastDesktopScreenNumber'] = QtGui.QApplication.desktop().screenNumber(self)
+                    self.jSettingsInMemDict['lastDesktopScreenNumber'] = QtGui.QApplication.desktop().screenNumber(self.ui)
+                    print "Detected display", self.jSettingsInMemDict['lastDesktopScreenNumber']
                 except:
-                    #print "Exception in detecing display"
+                    print "Exception in detecing display"
                     self.jSettingsInMemDict['lastDesktopScreenNumber'] = 0
 
-            if self.jSettingsInMemDict is not None and len(self.jSettingsInMemDict) > 0:
+            if self.jSettingsInMemDict is not None: # and len(self.jSettingsInMemDict) > 0:
                 ##print "Session has something to save"
                 jSettingsDictJSONed = json.dumps(self.jSettingsInMemDict)
                 if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
@@ -715,6 +730,7 @@ class MyMainWindow(QtGui.QMainWindow):
     def tryToCloseWin(self):
         if self.ui is not None:
             self.ui.close()
+#            self.close()
         #if __name__ == '__main__':
         #    sys.exit(0)
         return
@@ -726,7 +742,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
     # about info box:
     def showAbout(self):
-        QtGui.QMessageBox.about(self, "About MISE Series Translator",
+        self.qMsgBoxAbout("About MISE Series Translator",
                 "This application was built for the fan translation purposes of LucasArt's SoMI:SE and MI2:SE. "
                 "It was made by the Classic Adventures in Greek group and is distributed freely.")
 ##
@@ -753,14 +769,14 @@ class MyMainWindow(QtGui.QMainWindow):
             print "Could not find the required ui file %s for the Repacker Tool application. Quiting..." % (self.uiRepackerToolFileName)
 
         self.windowRepackerDLG = MyMainRepackerDLGWindow(self.tryEncoding, self.selGameID)
-##        QtGui.QMessageBox.information(self, "Gui connection not yet implemented...",
+##        self.qMsgBoxInformation( "Gui connection not yet implemented...",
 ##                "The Gui for the repacked tool is not yet implemented!")
 
     def showGotoToLineDlg(self):
         global listOfEnglishLinesSpeechInfo
         plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
         if plithosOfQuotes == 0:
-            QtGui.QMessageBox.critical(self, "Go to line...", "No lines were detected. Please load a file first")
+            self.qMsgBoxCritical( "Go to line...", "No lines were detected. Please load a file first")
             return
 
         text, ok = QtGui.QInputDialog.getText(self, 'Go to...',
@@ -768,14 +784,14 @@ class MyMainWindow(QtGui.QMainWindow):
         if ok and (self.parseInt(text) <> None):
             rowToGo = self.parseInt(text) - 1
             if(rowToGo < 0 or rowToGo > plithosOfQuotes - 1 ):
-                QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
+                self.qMsgBoxCritical( "Go to line...", "Not a valid line number")
                 return
             else:
                 indexToSelect = self.quoteTableView.model().index(rowToGo, 1, QModelIndex())
                 self.quoteTableView.setCurrentIndex(indexToSelect)
                 self.quoteTableView.setFocus()
         elif ok and self.parseInt(text) == None:
-            QtGui.QMessageBox.critical(self, "Go to line...", "Not a valid line number")
+            self.qMsgBoxCritical( "Go to line...", "Not a valid line number")
             return
         return
 
@@ -807,43 +823,43 @@ class MyMainWindow(QtGui.QMainWindow):
                         plithosOfQuotesConflicts +=1
 
         # todo: add uncomitted lines calculation
-        QtGui.QMessageBox.information(self, "Translation Session Report",
+        self.qMsgBoxInformation( "Translation Session Report",
                 "Total Lines: %d \n" % (plithosOfQuotes) + \
                 "In conflict: %d \n" % (plithosOfQuotesConflicts) + \
                 "Changed: %d \n" % (plithosOfQuotesChanged) + \
                 "Marked as pending: %d " % (plithosOfQuotesMarked))
 
     def findNextMarkedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find next marked quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find next marked quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="marked", pSearchDirection="down", pWrapAround=True )
 
     def findPrevMarkedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find previous marked quote", "not yet implemented")
+        #self.qMsgBoxInformation(  "Find previous marked quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="marked", pSearchDirection="up", pWrapAround=True )
 
     def findNextConflictingQuote(self):
-        #QtGui.QMessageBox.information(self, "Find next conflicted quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find next conflicted quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="conflicted", pSearchDirection="down", pWrapAround=True )
 
     def findPrevConflictingQuote(self):
-        #QtGui.QMessageBox.information(self, "Find previous conflicted quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find previous conflicted quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="conflicted", pSearchDirection="up", pWrapAround=True )
 
     def findNextChangedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find next changed quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find next changed quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="changed", pSearchDirection="down", pWrapAround=True )
 
 
     def findPrevChangedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find previous changed quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find previous changed quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="changed", pSearchDirection="up", pWrapAround=True )
 
     def findNextUnchangedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find next unchanged quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find next unchanged quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="unchanged", pSearchDirection="down", pWrapAround=True )
 
     def findPrevUnchangedQuote(self):
-        #QtGui.QMessageBox.information(self, "Find previous unchanged quote", "not yet implemented")
+        #self.qMsgBoxInformation( "Find previous unchanged quote", "not yet implemented")
         self.findNextMatchingStrLineInTable(pFindSpecialLinesMode="unchanged", pSearchDirection="up", pWrapAround=True )
 
     # backups the current translation file. Just a copy and a text export!
@@ -852,12 +868,12 @@ class MyMainWindow(QtGui.QMainWindow):
         plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
 
         if(self.ui.openTranslatedFileNameTxtBx.text().strip() == "" ) or (not os.access(self.ui.openTranslatedFileNameTxtBx.text().strip(), os.F_OK)) :
-            reply = QtGui.QMessageBox.information(self, "Backup Info", "No file to backup or file not found. Nothing to do.")
+            reply = self.qMsgBoxInformation( "Backup Info", "No file to backup or file not found. Nothing to do.")
             return
         filenameTransOrig = self.ui.openTranslatedFileNameTxtBx.text().strip()
         continueToBackup = True
         #1 Confirm with info about what's gonna happen
-        reply = QtGui.QMessageBox.question(self, "Backup info message", "This action will backup the active translation file and export its text to a separate .txt file.\nNote that any unsubmitted changes won't be saved in the backup native game file, but will be available in the exported text file!\nDo you want to continue?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+        reply = self.qMsgBoxQuestion("Backup info message", "This action will backup the active translation file and export its text to a separate .txt file.\nNote that any unsubmitted changes won't be saved in the backup native game file, but will be available in the exported text file!\nDo you want to continue?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
         if reply == QtGui.QMessageBox.No:
             continueToBackup = False
         if continueToBackup == True:
@@ -870,7 +886,7 @@ class MyMainWindow(QtGui.QMainWindow):
             self._exportToFileName( fileNameForExportTxt,1,plithosOfQuotes, suppressFinalMsgbox = True)
             shutil.copyfile(filenameTransOrig, fileNameForCopyNative)
             #2 Produce success message
-            reply = QtGui.QMessageBox.information(self, "Backup Info", "Backup process was completed.")
+            reply = self.qMsgBoxInformation( "Backup Info", "Backup process was completed.")
         return
 
     # TODO: construct a filename (or another filename) for the translation file.
@@ -982,7 +998,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if plithosOfQuotes == 0 or self.ui.openFileNameTxtBx.text().strip() == '':
                 #debug
                 #print "%d %s" % (plithosOfQuotes,self.ui.openFileNameTxtBx.text().strip())
-                reply = QtGui.QMessageBox.critical(self, "Information message", "No lines to export were found! Export failed!")
+                reply = self.qMsgBoxCritical( "Information message", "No lines to export were found! Export failed!")
                 continueToExport = False
 
             if continueToExport == True:
@@ -1025,11 +1041,11 @@ class MyMainWindow(QtGui.QMainWindow):
             if plithosOfQuotes == 0: # or self.ui.openTranslatedFileNameTxtBx.text().strip() == '':  # TODO: Restore second clause if required!
                 #debug
                 #print "%d %s" % (plithosOfQuotes,self.ui.openTranslatedFileNameTxtBx.text().strip())
-                reply = QtGui.QMessageBox.critical(self, "Information message", "No lines to export were found! Export failed!")
+                reply = self.qMsgBoxCritical( "Information message", "No lines to export were found! Export failed!")
                 continueToExport = False
                 # the overwrite case is auto handled by the dialogue
 #            elif os.access(filename, os.F_OK) :
-#                reply = QtGui.QMessageBox.question(self, "Information message", "This text file already exists. Do you want to overwrite it?", QtGui.QMessageBox.No | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+#                reply = self.qMsgBoxQuestion("Information message", "This text file already exists. Do you want to overwrite it?", QtGui.QMessageBox.No | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
 #                if reply == QtGui.QMessageBox.No:
 #                    continueToExport = False
 
@@ -1062,11 +1078,11 @@ class MyMainWindow(QtGui.QMainWindow):
         if(not suppressFinalMsgbox):
             if not errorFound:
                 if(exportedLines==pPlithosOfQuotes):
-                    reply = QtGui.QMessageBox.information(self, "Export Translation Text", "Process completed successfully! Exported %d lines." % (exportedLines))
+                    reply = self.qMsgBoxInformation( "Export Translation Text", "Process completed successfully! Exported %d lines." % (exportedLines))
                 elif(exportedLines<>pPlithosOfQuotes):
-                    reply = QtGui.QMessageBox.warning(self, "Partial Export Translation Text", "Only a partial export was completed! Exported %d lines." % (exportedLines))
+                    reply = self.qMsgBoxWarning("Partial Export Translation Text", "Only a partial export was completed! Exported %d lines." % (exportedLines))
             else:
-                reply = QtGui.QMessageBox.critical(self, "Error in Export Translation Text", "Process did not complete successfully! Exported %d lines." % (exportedLines))
+                reply = self.qMsgBoxCritical( "Error in Export Translation Text", "Process did not complete successfully! Exported %d lines." % (exportedLines))
         return
 
     # Import from selected txt file. A translation must be selected.
@@ -1080,7 +1096,7 @@ class MyMainWindow(QtGui.QMainWindow):
         numOfimportedEmptyPaddingLines = 0 # lines after the end of a shorter than the original text file
         plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
         if(plithosOfQuotes == 0 or self.ui.openFileNameTxtBx.text().strip()==''):
-            reply = QtGui.QMessageBox.information(self, "information message", "You cannot import a translation text with no original file loaded!")
+            reply = self.qMsgBoxInformation( "information message", "You cannot import a translation text with no original file loaded!")
             return
 
         options = QtGui.QFileDialog.Options()
@@ -1114,7 +1130,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
 
             tmpOpenFile.close()
-            reply = QtGui.QMessageBox.information(self, "Imported Translation Text", "Process completed! \n%d lines were imported out of %d. \nOf which: \nValid lines: %d \nError lines: %d (imported empty) \nEmpty padding lines: %d" % (numOfimportedLines+numOfimportedErrorLines, linesToImport, numOfimportedLines, numOfimportedErrorLines, numOfimportedEmptyPaddingLines))
+            reply = self.qMsgBoxInformation( "Imported Translation Text", "Process completed! \n%d lines were imported out of %d. \nOf which: \nValid lines: %d \nError lines: %d (imported empty) \nEmpty padding lines: %d" % (numOfimportedLines+numOfimportedErrorLines, linesToImport, numOfimportedLines, numOfimportedErrorLines, numOfimportedEmptyPaddingLines))
             pass
         return
 
@@ -1208,7 +1224,7 @@ class MyMainWindow(QtGui.QMainWindow):
             filename = filename.strip()
             filepathSplitTbl = os.path.split(filename)
             self.currentPath = filepathSplitTbl[0]
-            reply = QtGui.QMessageBox.information(self, "Save to Translation File", "Process NOT YET IMPLEMENTED!")
+            reply = self.qMsgBoxInformation( "Save to Translation File", "Process NOT YET IMPLEMENTED!")
             pass
         return
 
@@ -1248,14 +1264,14 @@ class MyMainWindow(QtGui.QMainWindow):
             #debug
             #print "%s == %s" % (filenNameGiv, self.ui.openFileNameTxtBx.text().strip())
             if filenNameGiv == fileNameOrig:
-                reply = QtGui.QMessageBox.critical(self, "Error message", "You cannot set the translated file to be the same file with the original!")
+                reply = self.qMsgBoxCritical( "Error message", "You cannot set the translated file to be the same file with the original!")
                 continueToOpen = False
             else:
                 # check extension
                 filenameGivExt = self._getExtensionOfFilefullPath(filenNameGiv)
                 filenaOrigExt = self._getExtensionOfFilefullPath(fileNameOrig)
                 if(filenameGivExt <> filenaOrigExt):
-                    reply = QtGui.QMessageBox.critical(self, "Error message", "You cannot "+interimStr+" a translation file that has a different extension than the original!")
+                    reply = self.qMsgBoxCritical( "Error message", "You cannot "+interimStr+" a translation file that has a different extension than the original!")
                     continueToOpen = False
                 else:
                     # check header (4 first bytes)
@@ -1273,17 +1289,17 @@ class MyMainWindow(QtGui.QMainWindow):
                             dataOrig = None
                         f.close()
                     if dataGiv == None or dataOrig == None or dataGiv <> dataOrig:
-                        reply = QtGui.QMessageBox.critical(self, "Error message", "You cannot "+interimStr+" a translation file that is of a different type than the original!")
+                        reply = self.qMsgBoxCritical( "Error message", "You cannot "+interimStr+" a translation file that is of a different type than the original!")
                         continueToOpen = False
                     else:
                         (quotesInLoadFile, detectedGID, parsedQuotesList) = self.getQuoteNumberInFile(filenNameGiv, parseQuotesFlag, pGrabberForTranslationDicts)
                         #debug
                         #print "load file: %d quotes, %d gameId" % (quotesInLoadFile,detectedGID)
                         if detectedGID <> self.selGameID:
-                            reply = QtGui.QMessageBox.critical(self, "Error message", "You cannot "+interimStr+" a translation file that's for a different game from the original!")
+                            reply = self.qMsgBoxCritical( "Error message", "You cannot "+interimStr+" a translation file that's for a different game from the original!")
                             continueToOpen = False
                         if quotesInLoadFile <> plithosOfQuotes:
-                            reply = QtGui.QMessageBox.critical(self, "Error message", "You cannot "+interimStr+" a translation file that has a different number of lines from the original!")
+                            reply = self.qMsgBoxCritical( "Error message", "You cannot "+interimStr+" a translation file that has a different number of lines from the original!")
                             continueToOpen = False
         else:
             continueToOpen = False
@@ -1307,14 +1323,14 @@ class MyMainWindow(QtGui.QMainWindow):
 
         foundConflicts = self._checkforConflicts()
         if foundConflicts == True:
-            QtGui.QMessageBox.critical(self, "Warning message - Merge not allowed", "You cannot merge with a translation file when unresolved conflicts are pending! \nPlease, check all detected conflicts and resolve them manually, before attempting to merge with another file!")
+            self.qMsgBoxCritical( "Warning message - Merge not allowed", "You cannot merge with a translation file when unresolved conflicts are pending! \nPlease, check all detected conflicts and resolve them manually, before attempting to merge with another file!")
             return
 
         #localGrabInstance = grabberFromPNG(self.tryEncoding, self.selGameID)
         #activeEnc = localGrabInstance.getActiveEncoding()
         continueToOpen = True
 
-        reply = QtGui.QMessageBox.question(self, 'Merge with translation file',
+        reply = self.qMsgBoxQuestion('Merge with translation file',
             "This action will merge a translation file with the one in the active session. \nThe resulting changes won't be saved until you click on the Submit button. \nFor any conflicting lines, all translations will be listed separated by new lines, \nand the quote will be marked as conflicted for manual resolution. \nDo you want to proceed?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.No:
@@ -1322,7 +1338,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
         if(plithosOfQuotes == 0 or self.ui.openFileNameTxtBx.text().strip()==''):
-            reply = QtGui.QMessageBox.information(self, "information message", "You cannot merge with a translation file, with no original file loaded!")
+            reply = self.qMsgBoxInformation( "information message", "You cannot merge with a translation file, with no original file loaded!")
             continueToOpen = False
             return
         options = QtGui.QFileDialog.Options()
@@ -1397,13 +1413,13 @@ class MyMainWindow(QtGui.QMainWindow):
                             self.setPendingItem(indexOfQuoteInTable)
 
 
-                    reply = QtGui.QMessageBox.information(self, "information message", "The translation file was merged sucessfully! \n"+ \
+                    reply = self.qMsgBoxInformation( "information message", "The translation file was merged sucessfully! \n"+ \
                                                             "The imported file contained: \n%d total quotes, \nof which: \n%d were changed \nand %d were uniquely changed. \n" % (numOfQuotesInImportedFile, numOfQuotesChangedInImportedFile, numOfQuotesChangedInImportedFile - numOfQuotesChangedButIdenticalInBothFiles)  + \
                                                             "Imported Lines: %d \nCleanly imported: %d \nMerged (in conflict) Lines: %d\n" % ( numOfQuotesImported, numOfCleanImports, numOfConflicts) )
                 else:
-                    reply = QtGui.QMessageBox.information(self, "information message", "Nothing to import!")
+                    reply = self.qMsgBoxInformation( "information message", "Nothing to import!")
             else:
-                reply = QtGui.QMessageBox.critical(self, "Error message", "Could not detect the active session!")
+                reply = self.qMsgBoxCritical( "Error message", "Could not detect the active session!")
         return
 
 
@@ -1421,14 +1437,14 @@ class MyMainWindow(QtGui.QMainWindow):
         continueToOpen = True
         plithosOfQuotes = len(listOfEnglishLinesSpeechInfo)
 
-        reply = QtGui.QMessageBox.question(self, 'Load translation file',
+        reply = self.qMsgBoxQuestion('Load translation file',
             "This action will load a translation file in the active session,\nreplacing the translation file that is currently used. \nDo you want to proceed?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.No:
             return
 
         if(plithosOfQuotes == 0 or self.ui.openFileNameTxtBx.text().strip()==''):
-            reply = QtGui.QMessageBox.information(self, "information message", "You cannot load a translation file, with no original file loaded!")
+            reply = self.qMsgBoxInformation( "information message", "You cannot load a translation file, with no original file loaded!")
             continueToOpen = False
             return
         options = QtGui.QFileDialog.Options()
@@ -1476,9 +1492,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
 
                     ##self.loadASession(pSessionName = None, pOriginalfullPathsFilename = fileNameOrig)
-                    reply = QtGui.QMessageBox.information(self, "information message", "The translation file was loaded sucessfully!")
+                    reply = self.qMsgBoxInformation( "information message", "The translation file was loaded sucessfully!")
                 else:
-                    reply = QtGui.QMessageBox.critical(self, "Error message", "Could not detect the active session!")
+                    reply = self.qMsgBoxCritical( "Error message", "Could not detect the active session!")
             else:
                 self.enableActionsAndButtonsForAvalidSession(False)
             pass
@@ -1925,7 +1941,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # loop through rows, check for set conflicts!
         foundConflicts = self._checkforConflicts()
         if foundConflicts == True:
-            QtGui.QMessageBox.critical(self, "Warning message - Failed to Submit", "You cannot submit a translation file with unresolved conflicts! \nPlease, check all detected conflicts and resolve them manually, before re-submitting!")
+            self.qMsgBoxCritical( "Warning message - Failed to Submit", "You cannot submit a translation file with unresolved conflicts! \nPlease, check all detected conflicts and resolve them manually, before re-submitting!")
             return
 
 
@@ -1949,7 +1965,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         plithosOfQuotes =len(listOfEnglishLinesSpeechInfo)
         if plithosOfQuotes == 0 or self.ui.openTranslatedFileNameTxtBx.text().strip() == '':
-            QtGui.QMessageBox.information(self, "Information message", "Nothing to do!")
+            self.qMsgBoxInformation( "Information message", "Nothing to do!")
             return
 
         errorsEncountered = 0
@@ -2234,7 +2250,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     nomatchCounterTmp = 0 # no-op
 
 
-                reply = QtGui.QMessageBox.question(self, 'Library Categories: Overwrite lines 1026-1265?', \
+                reply = self.qMsgBoxQuestion('Library Categories: Overwrite lines 1026-1265?', \
                             "The lines (711 to 950) and (1026-1265) contain identical values in the original file. Do you want to overwrite the translated values (lines 1026-1265) with the translated values from lines 711-950?", \
                             QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.Yes:
@@ -2245,20 +2261,20 @@ class MyMainWindow(QtGui.QMainWindow):
                 enClassicMonkey2FullExpectedPath = os.path.join( pathTosFile ,  filenameEnClassicMonkey2001)
                 if not os.access(enClassicMonkey2FullExpectedPath, os.F_OK) :
                     specialFlag_enClassicMonkey2FullExpectedPath_NotFound = True
-                    reply = QtGui.QMessageBox.question(self, 'Unable to resort the library',
+                    reply = self.qMsgBoxQuestion('Unable to resort the library',
                     "No classic file ({0}) was detected in the same folder with the {1} file. Do you want to proceed without resorting the library?".format(filenameEnClassicMonkey2001,filenameFrUIText), QtGui.QMessageBox.Yes |
                     QtGui.QMessageBox.No, QtGui.QMessageBox.No)
                     if reply == QtGui.QMessageBox.No:
                         # prompt to copy the original classic file to the right path
                         # and return.
-                        QtGui.QMessageBox.information(self, "Information message", "Process Aborted by user request! Please place the original {0} classic file in the same path with the {1} file if you want to resort the library cards.".format(filenameEnClassicMonkey2001,filenameFrUIText))
+                        self.qMsgBoxInformation( "Information message", "Process Aborted by user request! Please place the original {0} classic file in the same path with the {1} file if you want to resort the library cards.".format(filenameEnClassicMonkey2001,filenameFrUIText))
                         specialFlag_continueWithNoSortofLibraryClassic = False # for verbosity
                         return
                     else:
                         specialFlag_continueWithNoSortofLibraryClassic = True # for verbosity
                 else:
                     specialFlag_enClassicMonkey2FullExpectedPath_NotFound = False  # file was found!
-                    reply = QtGui.QMessageBox.question(self, 'Resort the library option',
+                    reply = self.qMsgBoxQuestion('Resort the library option',
                     "A classic file ({0}) was detected in the same folder with the {1} file. A resorted library copy can be created there. Do you want to resort the library?".format(filenameEnClassicMonkey2001,filenameFrUIText), QtGui.QMessageBox.Yes |
                     QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
                     if reply == QtGui.QMessageBox.No:
@@ -2779,11 +2795,11 @@ class MyMainWindow(QtGui.QMainWindow):
         #
         if errorsEncountered == 0:
             if specialFlag_LIBRARY_WAS_RESORTED:
-                QtGui.QMessageBox.information(self, "Information message", "Process Completed. No errors encountered! Additionally, the library was resorted. Please copy the {0}-copy file to the classic/en folder of the game and rename it to {0}.".format(filenameEnClassicMonkey2001))
+                self.qMsgBoxInformation( "Information message", "Process Completed. No errors encountered! Additionally, the library was resorted. Please copy the {0}-copy file to the classic/en folder of the game and rename it to {0}.".format(filenameEnClassicMonkey2001))
             else:
-                QtGui.QMessageBox.information(self, "Information message", "Process Completed. No errors encountered!")
+                self.qMsgBoxInformation( "Information message", "Process Completed. No errors encountered!")
         else:
-            QtGui.QMessageBox.information(self, "Warning message", "Process Completed, but %d errors were encountered!" % (errorsEncountered))
+            self.qMsgBoxInformation( "Warning message", "Process Completed, but %d errors were encountered!" % (errorsEncountered))
         return
     ####################################
     # SEARCH FIND REPLACE HIGHLIGHT
@@ -2967,7 +2983,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 return
 
             if len(keySearchStr) < 2:
-                reply = QtGui.QMessageBox.information(self, "Information message", "Cannot allow string search with less than 2 characters!")
+                reply = self.qMsgBoxInformation( "Information message", "Cannot allow string search with less than 2 characters!")
                 return
 
             # after validity checks, we set the member var to remember the last valid search
@@ -3022,17 +3038,17 @@ class MyMainWindow(QtGui.QMainWindow):
                 weHadAMatch = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,wrap_start,startRowOfSearch, searchInColumnNumber, search_direction, match_case)
         # if still is false then print message!
         if search_wrap == True and weHadAMatch == False:
-            reply = QtGui.QMessageBox.information(self, "Information message", "No matches were found!")
+            reply = self.qMsgBoxInformation( "Information message", "No matches were found!")
         elif search_wrap == False and weHadAMatch == False and search_direction == "up" and startRowOfSearch == plithosOfQuotes -1:
-            reply = QtGui.QMessageBox.information(self, "Information message", "No matches were found!")
+            reply = self.qMsgBoxInformation( "Information message", "No matches were found!")
         elif search_wrap == False and weHadAMatch == False and search_direction == "down" and startRowOfSearch == 0:
-            reply = QtGui.QMessageBox.information(self, "Information message", "No matches were found!")
+            reply = self.qMsgBoxInformation( "Information message", "No matches were found!")
         elif search_wrap == False and weHadAMatch == False and ( (search_direction == "down" and startRowOfSearch > 0) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1) ) :
-            reply = QtGui.QMessageBox.question(self, "Information message", "End of file reached. No matches were found! Do you want to continue search from the begining of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+            reply = self.qMsgBoxQuestion("Information message", "End of file reached. No matches were found! Do you want to continue search from the begining of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
             if reply == QtGui.QMessageBox.Yes:
                 weHadAMatch = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,wrap_start,startRowOfSearch, searchInColumnNumber, search_direction, match_case)
                 if weHadAMatch == False:
-                    reply = QtGui.QMessageBox.information(self, "Information message", "No matches were found!")
+                    reply = self.qMsgBoxInformation( "Information message", "No matches were found!")
 
         return
 
@@ -4792,9 +4808,9 @@ class MyMainWindow(QtGui.QMainWindow):
             enUITextInfoFullExpectedPath = os.path.join( pathTosFile ,  filenameEnUIText)
             criticalCommonMsg = " file not found. "
             if not os.access(fullPathsFilename, os.F_OK):
-                reply = QtGui.QMessageBox.critical(self, "Information message", sFilename + criticalCommonMsg)
+                reply = self.qMsgBoxCritical( "Information message", sFilename + criticalCommonMsg)
             elif(sFilename == filenameFrUIText and not os.access(enUITextInfoFullExpectedPath, os.F_OK)):
-                reply = QtGui.QMessageBox.critical(self, "Information message", filenameEnUIText + criticalCommonMsg + "Please place the "+filenameEnUIText+" file in the same directory with " +filenameFrUIText)
+                reply = self.qMsgBoxCritical( "Information message", filenameEnUIText + criticalCommonMsg + "Please place the "+filenameEnUIText+" file in the same directory with " +filenameFrUIText)
             else:
                 proceedToLoad = True
 
@@ -5205,7 +5221,7 @@ class MyMainWindow(QtGui.QMainWindow):
         # SPEECH.INFO, EN.SPEECH.INFO FOR MI2:SE
         #
         elif (sFilename == filenameEnSpeechInfo or sFilename == filenameSpeechInfo) and self.selGameID==2:
-            reply = QtGui.QMessageBox.information(self, "Info message", "For the dialogue quotes of MI2:SE please open the %s file." % (filenameFrSpeechInfo))
+            reply = self.qMsgBoxInformation( "Info message", "For the dialogue quotes of MI2:SE please open the %s file." % (filenameFrSpeechInfo))
             pass
             return (None, None)
         #
@@ -5214,17 +5230,17 @@ class MyMainWindow(QtGui.QMainWindow):
         elif (sFilename == filenameEnUIText  and self.selGameID==2):
             self.loadASession(pSessionName = None, pOriginalfullPathsFilename = fullPathsFilename)
             fullcopyFileName = self.ui.openTranslatedFileNameTxtBx.text().strip()
-            reply = QtGui.QMessageBox.information(self, "Info message", "For the ui text of MI2:SE please open the %s file." % (filenameFrUIText))
+            reply = self.qMsgBoxInformation( "Info message", "For the ui text of MI2:SE please open the %s file." % (filenameFrUIText))
             pass
             return (None, None)
 ##        elif sFilename in filenameCreditsListMISE2 and self.selGameID==2:
 ##            self.loadASession(pSessionName = None, pOriginalfullPathsFilename = fullPathsFilename)
 ##            fullcopyFileName = self.ui.openTranslatedFileNameTxtBx.text().strip()
-##            reply = QtGui.QMessageBox.information(self, "Info message", "Editing of "+sFilename+" credits file is not yet supported for MI2:SE!")
+##            reply = self.qMsgBoxInformation( "Info message", "Editing of "+sFilename+" credits file is not yet supported for MI2:SE!")
 ##            pass
 ##            return (None, None)
         else:
-            reply = QtGui.QMessageBox.information(self, "Info message", "Unsupported file.")
+            reply = self.qMsgBoxInformation( "Info message", "Unsupported file.")
             pass
             return (None, None)
 ####################################################################
@@ -5521,6 +5537,75 @@ class MyMainWindow(QtGui.QMainWindow):
         ## DEBUG 4.7
         #print "File {0}. Total commands: {1}, Useful: {2}, Other: {3}, Unknown: {4}, End Script: {5}".format(filename, unknownCommands+unlessEqCommands+otherCommands+endScriptCommands, unlessEqCommands, otherCommands, unknownCommands, endScriptCommands)
         return retval
+
+#
+# MESSAGEBOX FUNCTIONS
+#
+    def qMsgBoxQuestion(self, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm = QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, defaultBtnMsgBx = QtGui.QMessageBox.No):
+        qmsgParent = self
+        if(self.ui is not None):
+            qmsgParent = self.ui
+        reply = defaultBtnMsgBx
+        try:
+            reply = QtGui.QMessageBox.question(qmsgParent, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm, defaultBtnMsgBx)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen())
+            qmsgParent = QtGui.QMainWindow(parentScreen)
+            reply = QtGui.QMessageBox.question(qmsgParent, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm, defaultBtnMsgBx)
+        return reply
+
+    def qMsgBoxCritical(self, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm = QtGui.QMessageBox.Ok | QtGui.QMessageBox.Default, defaultBtnMsgBx = QtGui.QMessageBox.NoButton ):
+        qmsgParent = self
+        if(self.ui is not None):
+            qmsgParent = self.ui
+        reply = defaultBtnMsgBx
+        try:
+            reply = QtGui.QMessageBox.critical(qmsgParent, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm, defaultBtnMsgBx)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen())
+            qmsgParent = QtGui.QMainWindow(parentScreen)
+            reply = QtGui.QMessageBox.critical(qmsgParent, titleMsgBx, messageMsgBx, buttonFlagsMsgBxm, defaultBtnMsgBx)
+        return reply
+
+
+    def qMsgBoxInformation(self, titleMsgBx, messageMsgBx):
+        qmsgParent = self
+        if(self.ui is not None):
+            qmsgParent = self.ui
+        reply = QtGui.QMessageBox.Ok
+        try:
+            reply = QtGui.QMessageBox.information(qmsgParent, titleMsgBx, messageMsgBx)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen())
+            qmsgParent = QtGui.QMainWindow(parentScreen)
+            reply = QtGui.QMessageBox.information(qmsgParent, titleMsgBx, messageMsgBx)
+        return reply
+
+    def qMsgBoxAbout(self, titleMsgBx, messageMsgBx):
+        qmsgParent = self
+        if(self.ui is not None):
+            qmsgParent = self.ui
+        reply = QtGui.QMessageBox.Ok
+        try:
+            reply = QtGui.QMessageBox.about(qmsgParent, titleMsgBx, messageMsgBx)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen())
+            qmsgParent = QtGui.QMainWindow(parentScreen)
+            reply = QtGui.QMessageBox.about(qmsgParent, titleMsgBx, messageMsgBx)
+        return reply
+
+    def qMsgBoxWarning(self, titleMsgBx, messageMsgBx):
+        qmsgParent = self
+        if(self.ui is not None):
+            qmsgParent = self.ui
+        reply = QtGui.QMessageBox.Ok
+        try:
+            reply = QtGui.QMessageBox.warning(qmsgParent, titleMsgBx, messageMsgBx)
+        except:
+            parentScreen = QtGui.QApplication.desktop().screen(QtGui.QApplication.desktop().primaryScreen())
+            qmsgParent = QtGui.QMainWindow(parentScreen)
+            reply = QtGui.QMessageBox.warning(qmsgParent, titleMsgBx, messageMsgBx)
+        return reply
 
 #
 #
