@@ -65,9 +65,12 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
 ##
 ##
-    def __init__(self, pselectedEncoding=None, pselectedGameID=None):
+    def __init__(self, custParent = None, pselectedEncoding=None, pselectedGameID=None):
         self.ui = None
-        QtGui.QMainWindow.__init__(self)
+        if custParent == None:
+            QtGui.QMainWindow.__init__(self, custParent)
+        else:
+            QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
         else:
@@ -238,7 +241,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    window = MyMainRepackerDLGWindow('windows-1253', 1)
+    window = MyMainRepackerDLGWindow(None, 'windows-1253', 1)
     sys.exit(app.exec_())
 
 

@@ -36,8 +36,9 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
-# TODO: make extra highlighting optional
-# TDOD: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
+# TODO: QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
+# DONE: make extra highlighting optional
+# TODO: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
 # TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
        # "fixed", the search keyword overrides the others (it seems at least in practice)
 # DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
@@ -396,6 +397,7 @@ class MyMainWindow(QtGui.QMainWindow):
     icon = None
     ui = None
     windowFontDLG = None
+    windowRepackerDLG = None
     #
     # TODO: THESE SHOULD BE parameters for the GUI!!
     #
@@ -519,7 +521,7 @@ class MyMainWindow(QtGui.QMainWindow):
             parentScreen = QtGui.QApplication.desktop().screen(0x00)
             QtGui.QMainWindow.__init__(self, parentScreen)
 
-        print "is virtual desktop: ", is_virtual_desktop, screenCount, screen_number
+        #print "is virtual desktop: ", is_virtual_desktop, screenCount, screen_number
         self.ui = uic.loadUi(uiFilePath, self)
 
         if is_virtual_desktop :
@@ -696,9 +698,9 @@ class MyMainWindow(QtGui.QMainWindow):
             if self.jSettingsInMemDict is not None:
                 try:
                     self.jSettingsInMemDict['lastDesktopScreenNumber'] = QtGui.QApplication.desktop().screenNumber(self.ui)
-                    print "Detected display", self.jSettingsInMemDict['lastDesktopScreenNumber']
+                    #print "Detected display", self.jSettingsInMemDict['lastDesktopScreenNumber']
                 except:
-                    print "Exception in detecing display"
+                    #print "Exception in detecing display"
                     self.jSettingsInMemDict['lastDesktopScreenNumber'] = 0
 
             if self.jSettingsInMemDict is not None: # and len(self.jSettingsInMemDict) > 0:
@@ -749,7 +751,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not os.access(uiFontDlgFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Font Tool application. Quiting..." % (self.uiFontsToolFileName)
 
-        self.windowFontDLG = MyMainFontDLGWindow(self.tryEncoding, self.selGameID)
+        self.windowFontDLG = MyMainFontDLGWindow(self.ui, self.tryEncoding, self.selGameID)
         # Set up the user interface from Designer.
         #self.uiFontsTool = uic.loadUi(uiFontDlgFilePath)
         #self.uiFontsTool.show()
@@ -763,7 +765,7 @@ class MyMainWindow(QtGui.QMainWindow):
         if not os.access(uiRepackerToolFilePath, os.F_OK) :
             print "Could not find the required ui file %s for the Repacker Tool application. Quiting..." % (self.uiRepackerToolFileName)
 
-        self.windowRepackerDLG = MyMainRepackerDLGWindow(self.tryEncoding, self.selGameID)
+        self.windowRepackerDLG = MyMainRepackerDLGWindow(self.ui, self.tryEncoding, self.selGameID)
 ##        msgBoxesStub.qMsgBoxInformation(self.ui,  "Gui connection not yet implemented...",
 ##                "The Gui for the repacked tool is not yet implemented!")
 

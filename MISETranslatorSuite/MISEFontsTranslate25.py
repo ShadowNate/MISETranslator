@@ -110,9 +110,12 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             return False
 
 
-    def __init__(self, pselectedEncoding=None, pselectedGameID=None):
+    def __init__(self, custParent = None, pselectedEncoding=None, pselectedGameID=None):
         self.ui = None
-        QtGui.QMainWindow.__init__(self)
+        if custParent == None:
+            QtGui.QMainWindow.__init__(self, custParent)
+        else:
+            QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
         else:
@@ -1034,7 +1037,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             msgBoxesStub.qMsgBoxCritical(self.ui, "Error", "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName))
             return
 
-        self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
+        self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.ui, self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
         return
 
 ##
@@ -1042,6 +1045,6 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 ##
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    window = MyMainFontDLGWindow('windows-1253', 1)
+    window = MyMainFontDLGWindow(None, 'windows-1253', 1)
     sys.exit(app.exec_())
 
