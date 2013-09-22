@@ -36,22 +36,26 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
-# TODO: QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
+
 # DONE: make extra highlighting optional
-# TODO: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
-# TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
-       # "fixed", the search keyword overrides the others (it seems at least in practice)
 # DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
-# TODO: Replace should create a report of how many instances were replaced!
-# TODO: Bind Ctrl+H to replace (when it's implemented)
-# TODO: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5?
-# TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
-# TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
-# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
+# DONE: (4.95 fixed) Bug: Searching for greek is always case sensitive
+# DONE: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5? --> no connection with files. Just the last session.
+# TODO: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords)
+# TODO: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
+# TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
 # TODO: spell-check (aspell? hunspell?)
-# TODO: Bug: Searching for greek is always case sensitive
+# TODO: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
+# TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
+       # "fixed", the search keyword overrides the others (it seems at least in practice)
+# TODO: Replace should create a report of how many instances were replaced!
+# TODO: Bind Ctrl+H to replace (when it's implemented)
+# TODO: Bind Ctrl+Alt+H to replace with regex (when it's implemented)
+# TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
+# TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
+# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
 # TODO: Sorting books (library catalogue cards MI2:SE) uses system locale. It should use a locale associated with the selected encoding!
 
 ######
@@ -82,22 +86,20 @@ import json
 # TODO: find out exactly which characters get changed after just loading and storing the speech.info (or the fr.speech.info). Are they all unneeded or are there special chars there? (MI2:SE). Done?
 
 # TODO: ADD: Search ANY Column option
-
 # TODO: Dirty bit (save before quit or before open other file)
+# TODO: online updates!
 # TODO: Support for other languages.
 # TODO: Add menu, with Open, About and Another Open to import the configuration for the letter matchings. (the setting of matchings should be done in the FontsTranslation -Module or -GUI)
 # TODO: Configuration tab. Table for making additions of new characters (and their correspondances to characters in the font files...)
 # TODO: use md5 to recognize the original files. Make it configurable (to add md5 checksums for files if they are ever updated)
 # TODO: Upon errors encountered, print where they were encountered (no prints to the console, append them in a log or in the messagebox with new-line separators)
-# TODO: online updates!
-# TODO: Additional search options: Find next Marked, Find previous Marked, Total marked
-# TODO: Additional search options: Find next Changed, Find previous Changed,
-# TODO: Additional text field: Report Total Changed
-# TODO: Additional search options: Find next Pending, Find previous Pending, Report Total Pending
-# TODO: Find(Match Case) does not work for local language. Maybe convert keys to UTF-8 before comparing ???
-# TODO: Additional text field: Report Total Pending
-# TODO: Remove all explicit references to myEncoding and Windows-1253 and 69 and 0x9a and 0x99 and the dictionariues with greek letters and FRENCH
+## DONE: Additional search options: Find next Marked, Find previous Marked, Total marked
+## DONE: Additional search options: Find next Changed, Find previous Changed,
+## DONE: Additional text field: Report Total Changed --> it is in the report dialogue
+## TODO: Additional search options: Find next Pending, Find previous Pending, Report Total Pending
+## TODO: Additional text field: Report Total Pending --> it is in the report dialogue
 ## DONE: CHECK: Support all Formats of files for MONKEY ISLAND 2! Check if it breaks compatibility with SoMI:SE
+# TODO: Remove all explicit references to myEncoding and Windows-1253 and 69 and 0x9a and 0x99 and the dictionariues with greek letters and FRENCH
 
 # TODO: Autosave feature?
 # TODO: Note about the SoMI bugs that were "fixed" by changing the classic version (and a how-to). This could be integrated in the interface also (produce the text required in the classic version for the bug cases (lens, The Sea Monkey, 173 piece of eight or sth)
