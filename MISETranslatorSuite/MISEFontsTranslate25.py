@@ -42,6 +42,7 @@ import sqlite3
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
 sip.setapi('QString', 2)
+import msgBoxesStub
 
 import os, sys, shutil
 from PyQt4 import QtCore, QtGui, uic
@@ -62,7 +63,6 @@ from PyQt4.QtGui import QCloseEvent
 
 
 class MyMainFontDLGWindow(QtGui.QMainWindow):
-    MESSAGE = "<p>This is a sample info message! "
 
     #
     # TODO: Can we make this a parameter for the GUI?
@@ -111,6 +111,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 
 
     def __init__(self, pselectedEncoding=None, pselectedGameID=None):
+        self.ui = None
         QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -130,7 +131,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         self.ui.show()
 
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
-            QtGui.QMessageBox.critical(self, "Database file missing!",\
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Database file missing!",\
                 "The database file %s could not be found. Cannot proceed without a database file. Quiting..." % (self.DBFileNameAndRelPath))
             self.tryToCloseWin()
             return
@@ -167,8 +168,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     readSessLine = unicode("%s" % readSessLine, 'utf-8')
                 except:
                     errorLine = True
-                    MyMainFontDLGWindow.MESSAGE = "Could not read line %d from sessions file %s! Please check the file encoding (should be UTF-8) and the specific line to resolve the issue." % (linenum,self.mysessionsFilename)
-                    self.informationMessage()
+                    msgBoxesStub.qMsgBoxCritical(self.ui, "Error reading sessions", "Could not read line %d from sessions file %s! Please check the file encoding (should be UTF-8) and the specific line to resolve the issue." % (linenum,self.mysessionsFilename))
 
                 if not errorLine:
                     del involvedTokensLst[:]
@@ -235,7 +235,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         return
 
     def closeEvent(self, event):
-        reply = QtGui.QMessageBox.question(self, 'Quit Font Tool',
+        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, 'Quit Font Tool',
             "Are you sure you want to close this dialogue window?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
@@ -374,7 +374,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             for dictKey in self.supportedGames.keys():
                 supportedGamesNames.append( self.supportedGames[dictKey])
 
-            l1,ok= QInputDialog.getItem(self,self.tr("Select Game"),self.tr("Game"),supportedGamesNames,0,False)
+            l1,ok= QInputDialog.getItem(self.ui,self.tr("Select Game"),self.tr("Game"),supportedGamesNames,0,False)
             ## debug
             #print l1, ok
             if ok:
@@ -417,8 +417,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         matchedIndex = -1
         if self.ui.sessionsCmBx.currentIndex() <=0:
             #print "Cannot delete NULL session"
-            MyMainFontDLGWindow.MESSAGE = "Cannot delete NULL session!"
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Cannot delete", "Cannot delete NULL session!")
             return
 
         selSessName = self.ui.sessionsCmBx.itemText(self.ui.sessionsCmBx.currentIndex())
@@ -431,8 +430,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     matchedIndex = i
                     #print "Found Match"
 
-        MyMainFontDLGWindow.MESSAGE = "Are you sure you want to delete the current session (%s) ?"% (selSessName,)
-        reply = self.questionMessageYesNo()
+        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Delete session", "Are you sure you want to delete the current session (%s) ?"% (selSessName,)  )
         if reply == QtGui.QMessageBox.Yes:
             ## debug
             #print "Removing session %s" % selSessName
@@ -448,8 +446,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             self.writeBackToSessionsFile()
 
             # return to empty new session for the default game id (don't prompt for new game id)
-            MyMainFontDLGWindow.MESSAGE = "Session %s was removed successfully!"% (selSessName,)
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxInformation(self.ui, "Session removed", "Session %s was removed successfully!"% (selSessName,))
             # TODO: do we really need to start a new session? Perhaps not. Let the user keep the fields and decide themselves.
             #self.newSessionStart(newSessionStart = True)
         return
@@ -598,8 +595,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             #
             if silentBool == False:
                 errMsg = "Insufficient fields were submitted. Session was not saved...!"
-                MyMainFontDLGWindow.MESSAGE = errMsg
-                self.informationMessage()
+                msgBoxesStub.qMsgBoxCritical(self.ui, "Error", errMsg)
             return
         else:
 
@@ -627,8 +623,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
                     ## Debug
                     #print "Overwriting session %s" % (itSessionName,)
                     # TODO: prompt here?
-                    MyMainFontDLGWindow.MESSAGE = "Session %s will be overwritten with the current session's data. Do you want to continue?"% (itSessionName,)
-                    reply = self.questionMessageYesNo()
+                    reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Overwrite session", "Session %s will be overwritten with the current session's data. Do you want to continue?"% (itSessionName,) )
                     if reply == QtGui.QMessageBox.Yes:
                         self.sessionsList[i] = (itSessionName, atmpLst)
                     else:
@@ -686,8 +681,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         else:
             #print "Bad Arguments for outlining!"
             errMsg = "Bad Arguments for outlining!"
-            MyMainFontDLGWindow.MESSAGE = errMsg
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", errMsg)
             return
 
         if self.myGrabInstance is not None:
@@ -720,8 +714,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         else:
             #print "Bad Arguments for outlining!"
             errMsg = "Bad Arguments for outlining!"
-            MyMainFontDLGWindow.MESSAGE = errMsg
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", errMsg)
             return
 
         if self.myGrabInstance is not None:
@@ -734,8 +727,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 ##
 ##
     def paintOutlines(self, inputListmy, fileNameTxt):
-##        MyMainFontDLGWindow.MESSAGE = "Ok now to paint!"
-##        self.informationMessage()
+##        msgBoxesStub.qMsgBoxInformation(self.ui, "Debug", "Ok now to paint!" )
         # todo: optimize to reuse existing scene!!! or at least clean up
         if self.scene is not None:
             self.scene.clear()
@@ -913,8 +905,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 
         else:
             errMsg = "Bad Arguments for processing!"
-            MyMainFontDLGWindow.MESSAGE = errMsg
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", errMsg)
             return
 
         (errStat, errMsg, detBaseline, totalFontLetters, importedNumOfLetters) = self.myGrabInstance.generateModFiles(customBaseLineOffset)
@@ -944,8 +935,9 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             # And save session (if one is selected -other than "" ), mainly for the offset to baseline!
             #
             self.saveCurrentSession(True)
-        MyMainFontDLGWindow.MESSAGE = errMsg
-        self.informationMessage()
+            msgBoxesStub.qMsgBoxInformation(self.ui, "Info", errMsg)
+        else:
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", errMsg)
         return
 ##
 ##
@@ -1014,8 +1006,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
     def copyToGameDir(self):
         ## debug
         #print "Keep backup checkbox is {0}".format(self.ui.BkpOrigFilesInGameDirCkBx.isChecked())
-        MyMainFontDLGWindow.MESSAGE = "Function not yet implemented!"
-        self.informationMessage()
+        msgBoxesStub.qMsgBoxInformation(self.ui, "Not yet implemented", "Function not yet implemented!")
         return
 ##
 ##
@@ -1032,8 +1023,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
             and \
             (copyFontFileName is None or copyFontFileName == '' or copyPNGFileName is None or copyPNGFileName =='') ):
             ##print "Invalid arguments were given for the initialization of preview Sentence dialogue"
-            MyMainFontDLGWindow.MESSAGE = "Invalid arguments were given for the initialization of preview Sentence dialogue"
-            self.errorMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", "Invalid arguments were given for the initialization of preview Sentence dialogue")
             return
 
         ##currentFontFile = ''
@@ -1041,86 +1031,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         #print uiFontDlgFilePath
         if not os.access(uiSentencePreviewFilePath, os.F_OK) :
             ##print "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
-            MyMainFontDLGWindow.MESSAGE = "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName)
-            self.errorMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", "Could not find the required ui file %s for the Sentence Preview Dialogue." % (self.uiSentencePreviewFileName))
             return
 
         self.prevSentenceDLG = MyPreviewSentenceDLGWindow(self.tryEncoding, self.selGameID, origFontFilename, imageOriginalPNG, copyFontFileName, copyPNGFileName)
-
-        ##MyMainFontDLGWindow.MESSAGE = "Function not yet implemented!"
-        ##self.informationMessage()
-        return
-
-
-##
-##
-##
-    def informationMessage(self):
-        reply = QtGui.QMessageBox.information(self,
-                "Information message", MyMainFontDLGWindow.MESSAGE)
-#        if reply == QtGui.QMessageBox.Ok:
-#            self.informationLabel.setText("OK")
-#        else:
-#            self.informationLabel.setText("Escape")
-        return
-
-##
-##
-##
-    def questionMessageYesNoCancel(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyMainFontDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Cancel)
-#        if reply == QtGui.QMessageBox.Yes:
-#            self.questionLabel.setText("Yes")
-#        elif reply == QtGui.QMessageBox.No:
-#            self.questionLabel.setText("No")
-#        else:
-#            self.questionLabel.setText("Cancel")
-        return reply
-
-    def questionMessageYesNo(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyMainFontDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-#        if reply == QtGui.QMessageBox.Yes:
-#            self.questionLabel.setText("Yes")
-#        elif reply == QtGui.QMessageBox.No:
-#            self.questionLabel.setText("No")
-#        else:
-#            self.questionLabel.setText("Cancel")
-        return reply
-##
-##
-##
-    def warningMessage(self):
-        msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                    "Warning", MyMainFontDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.NoButton, self)
-        #msgBox.addButton("Save &Again", QtGui.QMessageBox.AcceptRole)
-        msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
-        msgBox.exec_()
- #       if msgBox.exec_() == QtGui.QMessageBox.AcceptRole:
- #           self.warningLabel.setText("Save Again")
- #       else:
- #           self.warningLabel.setText("Continue")
-
-    def errorMessage(self):
-        msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                    "Error", MyMainFontDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.NoButton, self)
-        msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
-        msgBox.exec_()
-
-
- #	def errorMessage(self):
- #		self.errorMessageDialog.showMessage("This dialog shows and remembers "
- #              "error messages. If the checkbox is checked (as it is by "
- #              "default), the shown message will be shown again, but if the "
- #              "user unchecks the box the message will not appear again if "
- #              "QErrorMessage.showMessage() is called with the same message.")
- #       self.errorLabel.setText("If the box is unchecked, the message won't "
- #               "appear again.")
         return
 
 ##

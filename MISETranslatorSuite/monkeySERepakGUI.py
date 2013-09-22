@@ -11,6 +11,7 @@ import sqlite3
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
 sip.setapi('QString', 2)
+import msgBoxesStub
 
 import os, sys, shutil
 from PyQt4 import QtCore, QtGui, uic
@@ -30,7 +31,6 @@ from PyQt4.QtGui import QCloseEvent
 #
 # TODO: Use GUI file if available!
 class MyMainRepackerDLGWindow(QtGui.QMainWindow):
-    MESSAGE = "<p>This is a sample info message! "
 
     tryEncoding = 'windows-1253'
     origEncoding = 'windows-1252'
@@ -66,6 +66,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
 ##
     def __init__(self, pselectedEncoding=None, pselectedGameID=None):
+        self.ui = None
         QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -168,8 +169,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
             self.currentPath = filepathSplitTbl[0]
             #self.ui.origPakFileNameTxtBx.setText("")
             self.ui.extractedFolderNameTxtBx.setText(folderNameGiv)
-        #MyMainRepackerDLGWindow.MESSAGE = "Function not yet implemented!"
-        #self.informationMessage()
+        #msgBoxesStub.qMsgBoxInformation(self.ui, "Not yet implemented", "Function not yet implemented!")
         return
 
 ##
@@ -189,23 +189,19 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
         #print "parsMode %d" % (selParseMode,)
 
         if TMPoriginalPakFilename == '' or TMProotFolderWithExtractedFiles == '' or selParseMode <= 0 or selParseMode >2:
-            MyMainRepackerDLGWindow.MESSAGE = "Arguments for process are invalid."
-            self.warningMessage()
+            msgBoxesStub.qMsgBoxWarning(self.ui, "Warning", "Arguments for process are invalid.")
         else:
             myOriginalPakInstance = pakFile(TMPoriginalPakFilename)
 
             if(myOriginalPakInstance._pakHeader != None):
                 errorFound = myOriginalPakInstance.produceModdedPak(TMProotFolderWithExtractedFiles, selParseMode)
                 #errorFound = True
-                if errorFound :
-                    MyMainRepackerDLGWindow.MESSAGE = "Process was halted by unexpected errors during the re-packing! Failed to produce a valid pak."
-                    self.warningMessage()
+                if errorFound:
+                    msgBoxesStub.qMsgBoxWarning(self.ui, "Warning", "Process was halted by unexpected errors during the re-packing! Failed to produce a valid pak.")
                 else:
-                    MyMainRepackerDLGWindow.MESSAGE = "Process completed with no errors!"
-                    self.informationMessage()
+                    msgBoxesStub.qMsgBoxInformation(self.ui, "Process completed", "Process completed with no errors!")
             else:
-                MyMainRepackerDLGWindow.MESSAGE = "Process was halted by unexpected errors while attempting to read from the original pak file! Process Failed."
-                self.warningMessage()
+                msgBoxesStub.qMsgBoxWarning(self.ui, "Warning", "Process was halted by unexpected errors while attempting to read from the original pak file! Process Failed.")
         return
 
     def clearFields(self):
@@ -231,45 +227,11 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
 ##
     def showAbout(self):
-        QtGui.QMessageBox.about(self, "About MISE Series Repacker",
+        msgBoxesStub.qMsgBoxAbout(self.ui, "About MISE Series Repacker",
                 "<p>This application was built for the fan translation purposes of LucasArt's SoMI:SE and MI2:SE. " \
                 "<br>It was made by the Classic Adventures in Greek group and is distributed freely.</p>" \
                 "<p>Special Thanks to: BgBennyBoy</p>")
         return
-
-##
-##
-##
-
-    def informationMessage(self):
-        reply = QtGui.QMessageBox.information(self,
-                "Information message", MyMainRepackerDLGWindow.MESSAGE)
-        return
-
-##
-##
-##
-    def questionMessageYesNoCancel(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyMainRepackerDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Cancel)
-        return reply
-
-    def questionMessageYesNo(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyMainRepackerDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        return reply
-##
-##
-##
-    def warningMessage(self):
-        msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                    "Warning", MyMainRepackerDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.NoButton, self)
-        #msgBox.addButton("Save &Again", QtGui.QMessageBox.AcceptRole)
-        msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
-        msgBox.exec_()
 
 ##
 ## Load up the main window (instantiate an object of the MyMainRepackerDLGWindow class)

@@ -17,6 +17,7 @@ import Image
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
 sip.setapi('QString', 2)
+import msgBoxesStub
 
 import os, sys, shutil
 from PyQt4 import QtCore, QtGui, uic
@@ -35,7 +36,6 @@ from PyQt4.QtGui import QCloseEvent
 
 
 class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
-    MESSAGE = "<p>This is a sample info message! "
 
     ##tryEncoding = 'windows-1253'
     greekEncoding = 'windows-1253'
@@ -83,6 +83,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
     icon = None
     ui = None
     def __init__(self, pselectedEncoding=None, pselectedGameID=None, pselectedOrigFontFile=None, pselectedOrigPngFile = None,pselectedExtendedFontFile=None, pselectedExtendedPngFile=None):
+        self.ui = None
         QtGui.QMainWindow.__init__(self)
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -119,7 +120,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         self.ui.show()
 
         if not os.access(self.DBFileNameAndRelPath, os.F_OK) :
-            QtGui.QMessageBox.critical(self, "Database file missing!",\
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Database file missing!",\
                 "The database file %s could not be found. Cannot proceed without a database file. Quiting..." % (self.DBFileNameAndRelPath))
             self.tryToCloseWin()
             return
@@ -172,7 +173,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         return
 
 ##    def closeEvent(self, event):
-##        reply = QtGui.QMessageBox.question(self, 'Quit Font Tool',
+##        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, 'Quit Font Tool',
 ##            "Are you sure you want to close this dialogue window?", QtGui.QMessageBox.Yes |
 ##            QtGui.QMessageBox.No, QtGui.QMessageBox.No)
 ##        if reply == QtGui.QMessageBox.Yes:
@@ -222,9 +223,8 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         del lettersToPrintLst[:]
 
         if self.listOfCharPngProperties is None or len(self.listOfCharPngProperties) <=0:
-            print "No items detected as drawn characters!"
-            MyPreviewSentenceDLGWindow.MESSAGE = "No items detected as drawn characters!"
-            self.informationMessage()
+            #print "No items detected as drawn characters!"
+            msgBoxesStub.qMsgBoxInformation(self.ui, "Info", "No items detected as drawn characters!")
             return
         #print "Active Encoding: %s. Game mode %d" % (self.activeEnc,self.selGameID)
 
@@ -396,8 +396,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         self.ui.customTextEdt.setText('')
         ##self.loadPngInGV()
         self.showDefaultText()
-##        MyPreviewSentenceDLGWindow.MESSAGE = "Function not yet implemented!"
-##        self.informationMessage()
+##        msgBoxesStub.qMsgBoxInformation(self.ui, "Not yet implemented", "Function not yet implemented!")
         return
 
 
@@ -405,8 +404,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
 ####
 ####
 ##    def paintOutlines(self, inputListmy, fileNameTxt):
-####        MyPreviewSentenceDLGWindow.MESSAGE = "Ok now to paint!"
-####        self.informationMessage()
+####        msgBoxesStub.qMsgBoxInformation(self.ui, "Debug", "Ok now to paint!")
 ##        # todo: optimize to reuse existing scene!!! or at least clean up
 ##        if self.scene is not None:
 ##            self.scene.clear()
@@ -526,9 +524,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
             retVal = self.ORIGINAL_FONT_FILE_ARGS
         else:
             errorFound = True
-            errMsg = "No valid file for characters drawing!"
-            MyMainFontDLGWindow.MESSAGE = errMsg
-            self.informationMessage()
+            msgBoxesStub.qMsgBoxCritical(self.ui, "Error", "No valid file for characters drawing!")
             retVal = self.ERROR_FONT_FILE_ARGS
         return retVal
 
@@ -645,70 +641,6 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
         ##print translatedTextAsCharsList2
         ##print "END OF translatedTextAsCharsList2"
         return translatedTextAsCharsList2
-
-
-##
-##
-##
-    def informationMessage(self):
-        reply = QtGui.QMessageBox.information(self,
-                "Information message", MyPreviewSentenceDLGWindow.MESSAGE)
-#        if reply == QtGui.QMessageBox.Ok:
-#            self.informationLabel.setText("OK")
-#        else:
-#            self.informationLabel.setText("Escape")
-        return
-
-##
-##
-##
-    def questionMessageYesNoCancel(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyPreviewSentenceDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Cancel)
-#        if reply == QtGui.QMessageBox.Yes:
-#            self.questionLabel.setText("Yes")
-#        elif reply == QtGui.QMessageBox.No:
-#            self.questionLabel.setText("No")
-#        else:
-#            self.questionLabel.setText("Cancel")
-        return reply
-
-    def questionMessageYesNo(self):
-        reply = QtGui.QMessageBox.question(self, "Question",
-                    MyPreviewSentenceDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-#        if reply == QtGui.QMessageBox.Yes:
-#            self.questionLabel.setText("Yes")
-#        elif reply == QtGui.QMessageBox.No:
-#            self.questionLabel.setText("No")
-#        else:
-#            self.questionLabel.setText("Cancel")
-        return reply
-##
-##
-##
-    def warningMessage(self):
-        msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                    "Warning", MyPreviewSentenceDLGWindow.MESSAGE,
-                    QtGui.QMessageBox.NoButton, self)
-        #msgBox.addButton("Save &Again", QtGui.QMessageBox.AcceptRole)
-        msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
-        msgBox.exec_()
- #       if msgBox.exec_() == QtGui.QMessageBox.AcceptRole:
- #           self.warningLabel.setText("Save Again")
- #       else:
- #           self.warningLabel.setText("Continue")
-
- #	def errorMessage(self):
- #		self.errorMessageDialog.showMessage("This dialog shows and remembers "
- #              "error messages. If the checkbox is checked (as it is by "
- #              "default), the shown message will be shown again, but if the "
- #              "user unchecks the box the message will not appear again if "
- #              "QErrorMessage.showMessage() is called with the same message.")
- #       self.errorLabel.setText("If the box is unchecked, the message won't "
- #               "appear again.")
-        return
 
 ##
 ## Load up the main window (instantiate an object of the MyPreviewSentenceDLGWindow class)
