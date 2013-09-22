@@ -191,25 +191,25 @@ class Highlighter(QtGui.QSyntaxHighlighter):
                     self.setFormat(index, length, format)
                     index = expression.indexIn(text, index + length)
 
-        self.setCurrentBlockState(0)
-
-        startIndex = 0
-        if self.previousBlockState() != 1:
-            startIndex = self.commentStartExpression.indexIn(text)
-
-        while startIndex >= 0:
-            endIndex = self.commentEndExpression.indexIn(text, startIndex)
-
-            if endIndex == -1:
-                self.setCurrentBlockState(1)
-                commentLength = len(text) - startIndex
-            else:
-                commentLength = endIndex - startIndex + self.commentEndExpression.matchedLength()
-
-            self.setFormat(startIndex, commentLength,
-                    self.multiLineCommentFormat)
-            startIndex = self.commentStartExpression.indexIn(text,
-                    startIndex + commentLength);
+##        self.setCurrentBlockState(0)
+##
+##        startIndex = 0
+##        if self.previousBlockState() != 1:
+##            startIndex = self.commentStartExpression.indexIn(text)
+##
+##        while startIndex >= 0:
+##            endIndex = self.commentEndExpression.indexIn(text, startIndex)
+##
+##            if endIndex == -1:
+##                self.setCurrentBlockState(1)
+##                commentLength = len(text) - startIndex
+##            else:
+##                commentLength = endIndex - startIndex + self.commentEndExpression.matchedLength()
+##
+##            self.setFormat(startIndex, commentLength,
+##                    self.multiLineCommentFormat)
+##            startIndex = self.commentStartExpression.indexIn(text,
+##                    startIndex + commentLength);
 
 def main():
     pass

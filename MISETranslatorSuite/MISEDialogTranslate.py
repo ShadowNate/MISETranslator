@@ -41,8 +41,9 @@ import json
 # DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
 # DONE: (4.95 fixed) Bug: Searching for greek is always case sensitive
 # DONE: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5? --> no connection with files. Just the last session.
-# TODO: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords)
-# TODO: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
+# DONE: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
+# TODO: Check if python regexps can be used for highlighting instead of the QegExpr limited (non-optimal matches)
+# TODO: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
@@ -96,8 +97,8 @@ import json
 ## DONE: Additional search options: Find next Marked, Find previous Marked, Total marked
 ## DONE: Additional search options: Find next Changed, Find previous Changed,
 ## DONE: Additional text field: Report Total Changed --> it is in the report dialogue
-## TODO: Additional search options: Find next Pending, Find previous Pending, Report Total Pending
-## TODO: Additional text field: Report Total Pending --> it is in the report dialogue
+## DONE: Additional search options: Find next Pending, Find previous Pending, Report Total Pending
+## DONE: Additional text field: Report Total Pending --> it is in the report dialogue
 ## DONE: CHECK: Support all Formats of files for MONKEY ISLAND 2! Check if it breaks compatibility with SoMI:SE
 # TODO: Remove all explicit references to myEncoding and Windows-1253 and 69 and 0x9a and 0x99 and the dictionariues with greek letters and FRENCH
 
@@ -2906,13 +2907,62 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.findReplaceLbl.setText("Replace:")
         return
 
-
+    # a. if not at a matching cell (check), search for next match up/down. Place focus at matching cell.
+    #    if at a matching cell search up/down for next match (can be multiple matches in a cell)
+    #    scroll document to matching text. Highlight as selected (display and edit view?)
+    # b. show a dialogue box. Replace this instance of "" with the defined text? YES, NO, STOP, REPLACE ALL
+    #    YES replaces, unhighlights from "selected" and searches for next match (could be in same slot) (go to a or c)
+    #    NO does not replace, unhighlights from "selected" and searches for next (could be in same slot) (go to a or c)
+    #    STOP does not replace, unhighlights from "selected" and presents report (replaced x out of y total matches) ---> END
+    #    REPLACE ALL replaces all instances without prompting anymore. At the end (no more matches) presents a report ----> END
+    # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
     def replaceOnceMatchClickedButton(self, checked):
         ##print "replaceOnceMatch clicked"
+        self.replaceModeIsOngoing = True
+        while(self.replaceModeIsOngoing):
+            # break if no matches, or explicitly select stop from dialogue.
+            msgBox = QMessageBox(self.ui)
+            msgBox.setWindowTitle ("Replace Matching String...")
+            msgBox.setText("Do you want to replace this instance?")
+            yesReplaceButton = msgBox.addButton(self.tr("Replace"), QMessageBox.YesRole)
+            noReplaceButton = msgBox.addButton(self.tr("Skip"), QMessageBox.NoRole)
+            stopButton = msgBox.addButton(QMessageBox.Cancel)
+            replaceAllButton = msgBox.addButton(self.tr("Replace All"), QMessageBox.YesRole)
+            msgBox.setDefaultButton(yesReplaceButton)
+            reply = msgBox.exec_()
+            if msgBox.clickedButton() == yesReplaceButton:
+                # replace
+                #print "Replace and continue"
+                pass
+            elif msgBox.clickedButton() == noReplaceButton:
+                # skip
+                #print "Skip replace"
+                pass
+            elif msgBox.clickedButton() == stopButton: #also catches click on the [X] of dialogue
+                # Stop
+                #print "Stop replace"
+                self.replaceModeIsOngoing = False
+            elif msgBox.clickedButton() == replaceAllButton:
+                # "Replace All"
+                #print "Replace all"
+                pass
+            else:
+                #print "something else happened"
+                self.replaceModeIsOngoing = False
+            #print "reply: ", reply
         return
 
     def replaceAllMatchClickedButton(self, checked):
         ##print "replaceAllMatch clicked"
+        self.replaceModeIsOngoing = True
+        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Replace All Confirmation", "Are you sure you want to replace all instances?\nThis action cannot be undone.")
+        if reply == QMessageBox.Yes:
+            print "go ahead replace all"
+            pass
+        else:
+            self.replaceModeIsOngoing = False
+            print "abort replace all"
+            pass
         return
 
 
