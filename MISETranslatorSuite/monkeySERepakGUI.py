@@ -38,7 +38,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
     currentPath = u"" # for open or save files
     relPath = u'.'
     uiFolderName = u'ui'
-    uiRepackerToolFileName = u'MISERepackUIWin.ui'
+    uiRepackerToolFileName = u'MISERepackUIDlg.ui'
     MI1GameID = 1
     MI1GameStr = 'The Secret of Monkey Island: SE'
     MI1GameShortStr = 'mise'
@@ -67,7 +67,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
     def __init__(self, custParent = None, pselectedEncoding=None, pselectedGameID=None):
         self.ui = None
-        if custParent == None:
+        if custParent is not None:
             QtGui.QMainWindow.__init__(self, custParent)
         else:
             QtGui.QMainWindow.__init__(self)
@@ -101,9 +101,9 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
         self.ui.SubmitRepackBtn.clicked.connect(self.goRepack)
         self.ui.resetBtn.clicked.connect(self.clearFields)
 
-        self.ui.actionQuit_3.triggered.connect(self.tryToCloseWin)   ## Should check for dirty bit
-        self.ui.actionQuit_3.setShortcut('Ctrl+Q')
-        self.ui.actionAbout.triggered.connect(self.showAbout)
+##        self.ui.actionQuit_3.triggered.connect(self.tryToCloseWin)   ## Should check for dirty bit
+##        self.ui.actionQuit_3.setShortcut('Ctrl+Q')
+##        self.ui.actionAbout.triggered.connect(self.showAbout)
 
         self.ui.selGameCmBx.addItem(self.MI1GameStr, self.MI1GameID)
         self.ui.selGameCmBx.addItem(self.MI2GameStr, self.MI2GameID)
@@ -113,7 +113,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 ##
 ##
     def closeEvent(self, event):
-        reply = QtGui.QMessageBox.question(self, 'Quit Repacker Tool',
+        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, 'Quit Repacker Tool',
             "Are you sure you want to close this dialogue window?", QtGui.QMessageBox.Yes |
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
@@ -138,7 +138,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 #        self.native = True
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Original Pak File ",
             self.currentPath,
             "pak File (*.pak)", options)
@@ -160,7 +160,7 @@ class MyMainRepackerDLGWindow(QtGui.QMainWindow):
 #        self.native = True
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        folderNameGiv = QtGui.QFileDialog. getExistingDirectory(self,
+        folderNameGiv = QtGui.QFileDialog. getExistingDirectory(self.ui,
             "Select Extracted Game Folder ",
             #self.ui.openFileNameTxtBx.text(),
             self.currentPath, options)

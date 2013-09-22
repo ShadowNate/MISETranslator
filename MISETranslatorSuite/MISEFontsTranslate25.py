@@ -112,7 +112,7 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
 
     def __init__(self, custParent = None, pselectedEncoding=None, pselectedGameID=None):
         self.ui = None
-        if custParent == None:
+        if custParent is not None:
             QtGui.QMainWindow.__init__(self, custParent)
         else:
             QtGui.QMainWindow.__init__(self)
@@ -772,10 +772,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
 ##            "Open Custom Row of Letters PNG Image file", self.ui.openCustRowFileTxtBx.text(),
 ##            "PNG Row Image Files (*.png);;All Files (*)", options)
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Custom Row of Letters PNG Image file", self.currentPath,
             "PNG Row Image Files (*.png);;All Files (*)", options)
         if filenNameGiv:
@@ -794,10 +794,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
 ##            "Open Original Font Data file", self.ui.openOrigFontTxtBx.text(),
 ##            "FONT MISE Files (*.font);;All Files (*)", options)
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Original Font Data file", self.ui.openOrigFontTxtBx.text(),
             "FONT MISE Files (*.font);;All Files (*)", options)
         if filenNameGiv:
@@ -815,10 +815,10 @@ class MyMainFontDLGWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+##        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
 ##            "Open Font Image file", self.ui.openFileNameTxtBx.text(),
 ##            "PNG Image Files (*.png);;All Files (*)", options)
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Font Image file", self.ui.openFileNameTxtBx.text(),
             "PNG Image Files (*.png);;All Files (*)", options)
         if filenNameGiv:

@@ -84,7 +84,7 @@ class MyPreviewSentenceDLGWindow(QtGui.QMainWindow):
     ui = None
     def __init__(self, custParent = None, pselectedEncoding=None, pselectedGameID=None, pselectedOrigFontFile=None, pselectedOrigPngFile = None,pselectedExtendedFontFile=None, pselectedExtendedPngFile=None):
         self.ui = None
-        if custParent == None:
+        if custParent is not None:
             QtGui.QMainWindow.__init__(self, custParent)
         else:
             QtGui.QMainWindow.__init__(self)

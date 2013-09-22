@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
+ <author>Antoniou Athanassios</author>
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
   <property name="windowModality">
@@ -20,6 +21,12 @@
    <iconset resource="images.qrc">
     <normaloff>:/icons/iconsimple.ico</normaloff>:/icons/iconsimple.ico</iconset>
   </property>
+  <property name="iconSize" stdset="0">
+   <size>
+    <width>24</width>
+    <height>24</height>
+   </size>
+  </property>
   <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0">
     <widget class="QGroupBox" name="groupBox_2">
@@ -38,7 +45,7 @@
      <property name="title">
       <string/>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -154,9 +161,6 @@
     </widget>
    </item>
   </layout>
-  <zorder>groupBox_2</zorder>
-  <zorder>groupBox</zorder>
-  <zorder>sentenceViewPngFont</zorder>
  </widget>
  <resources>
   <include location="images.qrc"/>

@@ -388,7 +388,7 @@ class MyMainWindow(QtGui.QMainWindow):
     uiFolderName = u'ui'
     uiFileName = u'MISEDialogTranslateUIWin.ui'
     uiFontsToolFileName = u'MISEFontsTranslateUIDlg.ui'
-    uiRepackerToolFileName = u'MISERepackUIWin.ui'
+    uiRepackerToolFileName = u'MISERepackUIDlg.ui'
     jSettingsInMemDict = None
 
     DBFileNameAndRelPath = ""
@@ -980,7 +980,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filename = QtGui.QFileDialog.getSaveFileName(self, self.tr('Set the output text file to export the original text into'), self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
+        filename = QtGui.QFileDialog.getSaveFileName(self.ui, self.tr('Set the output text file to export the original text into'), self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
         if filename:
             filename = self.fixFileNameWithOsSep(filename)
             filename = filename.strip()
@@ -1023,7 +1023,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filename = QtGui.QFileDialog.getSaveFileName(self, self.tr('Set the output text file to export the translation into'), self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
+        filename = QtGui.QFileDialog.getSaveFileName(self.ui, self.tr('Set the output text file to export the translation into'), self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
         if filename:
             filename = self.fixFileNameWithOsSep(filename)
             filename = filename.strip()
@@ -1099,7 +1099,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filename = QtGui.QFileDialog.getOpenFileName(self, "Import from text file ", self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
+        filename = QtGui.QFileDialog.getOpenFileName(self.ui, "Import from text file ", self.currentPath, self.tr("Text File (*.txt);;All Files (*)"), options)
         if filename:
             filename = self.fixFileNameWithOsSep(filename)
             filename = filename.strip()
@@ -1215,7 +1215,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filename = QtGui.QFileDialog.getSaveFileName(self, self.tr('Set the file for the translated dialogue'), self.currentPath, self.tr("Speech, GUI, Hints File ("+filenameInfoWildCard+");;Credits File (*.credits.xml);;All Files (*)"), options)
+        filename = QtGui.QFileDialog.getSaveFileName(self.ui, self.tr('Set the file for the translated dialogue'), self.currentPath, self.tr("Speech, GUI, Hints File ("+filenameInfoWildCard+");;Credits File (*.credits.xml);;All Files (*)"), options)
         if filename:
             filename = self.fixFileNameWithOsSep(filename)
             filename = filename.strip()
@@ -1341,7 +1341,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Merge with Translated Dialog File ", self.currentPath,
             self.tr("Speech, GUI File ("+filenameInfoWildCard+");;Hints File (*.csv);;Credits File (*.xml);;All Files (*)"), options)
         if(filenNameGiv):
@@ -1447,7 +1447,7 @@ class MyMainWindow(QtGui.QMainWindow):
         options = QtGui.QFileDialog.Options()
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Translated Dialog File ", self.currentPath,
             self.tr("Speech, GUI File ("+filenameInfoWildCard+");;Hints File (*.csv);;Credits File (*.xml);;All Files (*)"), options)
         if filenNameGiv:
@@ -1505,7 +1505,7 @@ class MyMainWindow(QtGui.QMainWindow):
 #        self.native = True
         if not self.native:
             options |= QtGui.QFileDialog.DontUseNativeDialog
-        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self,
+        filenNameGiv = QtGui.QFileDialog.getOpenFileName(self.ui,
             "Open Original Dialog File ",
             #self.ui.openFileNameTxtBx.text(),
             self.currentPath,
