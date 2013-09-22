@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>glyphicons_027_search.png</file>
+    <file>glyphicons_256_delete.png</file>
     <file>iconsimple.ico</file>
   </qresource>
 </RCC>

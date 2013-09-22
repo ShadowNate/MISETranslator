@@ -16,6 +16,7 @@ from math import trunc
 # This is only needed for Python v2 but is harmless for Python v3.
 import sip
 sip.setapi('QString', 2)
+# images.qrc (from designed) compiled with pyrcc4 ui/images.qrc -o imagesrsc.py
 import imagesrsc
 import highlightRulesGlobal
 
@@ -535,6 +536,7 @@ class MyMainWindow(QtGui.QMainWindow):
 ##        self.ui.LoadQuoteFileBtn.clicked.connect(self.loadQuoteFileinTable)
         self.ui.SubmitChangesBtn.clicked.connect(self.saveToLoadedQuoteFile)
         self.ui.FindInQuotesBtn.clicked.connect(self.findNextMatchFromClickedButton)
+        self.ui.cleanSearchBtn.clicked.connect(self.resetFindSearch)
         self.ui.replaceInQuotesBtn.clicked.connect(self.replaceOnceMatchClickedButton)
         self.ui.replaceAllInQuotesBtn.clicked.connect(self.replaceAllMatchClickedButton)
         self.currentSearchKeyword = ""
@@ -549,9 +551,11 @@ class MyMainWindow(QtGui.QMainWindow):
         self.SearcHReplaceModesRadioGroup = QButtonGroup()
         self.SearcHReplaceModesRadioGroup.addButton(self.ui.searchModeRB)
         self.SearcHReplaceModesRadioGroup.addButton(self.ui.replaceModeRB)
+        self.SearcHReplaceModesRadioGroup.addButton(self.ui.replaceRegExModeRB)
 
         self.ui.searchModeRB.connect(self.ui.searchModeRB, QtCore.SIGNAL('toggled(bool)'), self.searchModeToggled)
         self.ui.replaceModeRB.connect(self.ui.replaceModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceModeToggled)
+        self.ui.replaceModeRB.connect(self.ui.replaceRegExModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceRegExModeToggled)
         self.ui.searchModeRB.toggle()
 
         # todo: Match Case initialise!
@@ -2863,6 +2867,17 @@ class MyMainWindow(QtGui.QMainWindow):
             self.ui.findReplaceLbl.setText("Replace:")
         return
 
+    def replaceRegExModeToggled(self, stateChecked):
+        if(stateChecked):
+            ##print "replace Mode enabled", self.ui.replaceModeRB.isChecked()
+            self.ui.replaceAllInQuotesBtn.show()
+            self.ui.replaceInQuotesBtn.show()
+            self.ui.replaceWithStrTxtBx.show()
+            self.ui.replaceWithLbl.show()
+            self.ui.findReplaceLbl.setText("Replace:")
+        return
+
+
     def replaceOnceMatchClickedButton(self, checked):
         ##print "replaceOnceMatch clicked"
         return
@@ -2871,6 +2886,18 @@ class MyMainWindow(QtGui.QMainWindow):
         ##print "replaceAllMatch clicked"
         return
 
+
+    # CLEANUP FIND SEARCH
+    def resetFindSearch(self):
+        global listOfEnglishLinesSpeechInfo
+        plithosOfQuotes =len(listOfEnglishLinesSpeechInfo)
+        self.ui.findStrTxtBx.setText("")
+        highlightRulesGlobal.clearSearchRule()
+        if(plithosOfQuotes>0):
+            self.quoteTableView.clearSelection()
+        return
+
+    #?????????????????
 
     # we needed to separate this from findNextMatchingStrLineInTable, because python passed a checked argument (bool) that overrides the value of pFindSpecialLinesMode
     def findNextMatchFromClickedButton(self, checked):
@@ -2916,9 +2943,7 @@ class MyMainWindow(QtGui.QMainWindow):
             keySearchStr = self.ui.findStrTxtBx.text().strip()
             #print "keySearchStr"+ keySearchStr
             if keySearchStr == "" or plithosOfQuotes==0:
-                highlightRulesGlobal.clearSearchRule()
-                if(plithosOfQuotes>0):
-                    self.quoteTableView.clearSelection()
+                self.resetFindSearch()
                 return
 
             if len(keySearchStr) < 2:

@@ -97,7 +97,7 @@
                 <item>
                  <widget class="QRadioButton" name="searchModeRB">
                   <property name="text">
-                   <string>Search mode</string>
+                   <string>Search</string>
                   </property>
                   <property name="autoExclusive">
                    <bool>true</bool>
@@ -107,10 +107,17 @@
                 <item>
                  <widget class="QRadioButton" name="replaceModeRB">
                   <property name="text">
-                   <string>Replace mode</string>
+                   <string>Replace</string>
                   </property>
                   <property name="autoExclusive">
                    <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="replaceRegExModeRB">
+                  <property name="text">
+                   <string>Replace with regex</string>
                   </property>
                  </widget>
                 </item>
@@ -273,30 +280,6 @@
          </item>
          <item row="0" column="3">
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="2" column="1">
-            <widget class="QPushButton" name="replaceAllInQuotesBtn">
-             <property name="text">
-              <string>Replace all</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="FindInQuotesBtn">
-             <property name="text">
-              <string>Search</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="replaceInQuotesBtn">
-             <property name="text">
-              <string>Replace</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="0" rowspan="2">
             <spacer name="verticalSpacer_3">
              <property name="orientation">
@@ -312,6 +295,75 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="cleanSearchBtn">
+             <property name="minimumSize">
+              <size>
+               <width>30</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Clean search</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="images.qrc">
+               <normaloff>:/icons/glyphicons_256_delete.png</normaloff>:/icons/glyphicons_256_delete.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="FindInQuotesBtn">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Find next match</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="images.qrc">
+               <normaloff>:/icons/glyphicons_027_search.png</normaloff>:/icons/glyphicons_027_search.png</iconset>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="2">
+            <widget class="QPushButton" name="replaceInQuotesBtn">
+             <property name="minimumSize">
+              <size>
+               <width>90</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Replace</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1" colspan="2">
+            <widget class="QPushButton" name="replaceAllInQuotesBtn">
+             <property name="minimumSize">
+              <size>
+               <width>90</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Replace all</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -441,6 +493,12 @@
       </item>
       <item row="0" column="8">
        <widget class="QPushButton" name="SubmitChangesBtn">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="font">
          <font>
           <weight>75</weight>
