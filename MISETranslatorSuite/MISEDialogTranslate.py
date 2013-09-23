@@ -2931,8 +2931,15 @@ class MyMainWindow(QtGui.QMainWindow):
     #    STOP does not replace, unhighlights from "selected" and presents report (replaced x out of y total matches) ---> END
     #    REPLACE ALL replaces all instances without prompting anymore. At the end (no more matches) presents a report ----> END
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
+    #   TODO put check for translation column even earlier (not after first match)!
     #   TODO we need different kind of highlighting for "active match instance to replace"
     #   TODO for total matches overall we one early full scan of the column, with NO SELECTION MADE, and NO reset of current selected index.
+    #   TODO Need early scan of column to find total matches.
+    #   TODO Assess need of non-modal replace dialogue
+    #   TODO Need implementation of replace all.
+    #   TODO Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
+    #   TODO Need to show somehow the active cell. (either non-modal dialogue, or mention the row number?)
+    #   TODO BUG: no-wrap. Replace mode. Press REPLACE for word that does not exist -> "End of file reached, continute"?". Either yes or no, we get "full circle" dlg. And either yes or no there exits. :/
     ##  DONE we need to exclude column 0 from replace mode. (or show a message that it's not allowed/it has no purpose)
     ##  DONE test with no wrap around!
     def replaceOnceMatchClickedButton(self, checked):
