@@ -2967,9 +2967,14 @@ class MyMainWindow(QtGui.QMainWindow):
                     # Stop
                     #print "Stop replace"
                     self.replaceModeIsOngoing = False
+                    # TODO: show report if any replaces were made!
+                    if(totalReplaces > 0):
+                        self.showReplaceReportLog(totalMatches, totalReplaces)
                 elif msgBox.clickedButton() == replaceAllButton:
                     # "Replace All"
                     #print "Replace all"
+                    if(totalReplaces > 0):
+                        self.showReplaceReportLog(totalMatches, totalReplaces)
                     pass
                 else:
                     #print "something else happened"
@@ -2978,7 +2983,8 @@ class MyMainWindow(QtGui.QMainWindow):
             else:
                 self.replaceModeIsOngoing = False
                 # TODO: show report if any replaces were made!
-
+                if(totalReplaces > 0):
+                    self.showReplaceReportLog(totalMatches, totalReplaces)
         return
 
     def replaceAllMatchClickedButton(self, checked):
@@ -2993,6 +2999,14 @@ class MyMainWindow(QtGui.QMainWindow):
             print "abort replace all"
             pass
         return
+    #
+    # TODO: we need to differential pTotalMatches (overall in the document), and pTotalTraversedMatches (how many the user has found/visited, clicking replace or skip. Again a cell could contain more than one matches; we need to account for that).
+    #
+    def showReplaceReportLog(self, pTotalMatches, pTotalReplaces):
+        msgBoxesStub.qMsgBoxInformation(self.ui,  "Replace Report",
+        "Total Matches: %d \n" % (pTotalMatches) + \
+        "Replaced: %d \n" % (pTotalReplaces) + \
+        "Skiped: %d \n" % (pTotalMatches - pTotalReplaces) )
 
 
     # CLEANUP FIND SEARCH
