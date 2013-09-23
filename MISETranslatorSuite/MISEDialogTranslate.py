@@ -42,21 +42,23 @@ import json
 # DONE: (4.95 fixed) Bug: Searching for greek is always case sensitive
 # DONE: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5? --> no connection with files. Just the last session.
 # DONE: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
+# DONE: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
+# DONE: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too. --> WON'T DO. They are dialogues (now repaker is a dialogue too, and they will nest with the parent app).
+# DONE: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
+#       |-   "FIXED", the search keyword overrides the others (it seems at least in practice)
+
+# TODO: Replace should create a report of how many instances were replaced!
+# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
+# TODO: Bind Ctrl+H to replace (when it's implemented)
+# TODO: Bind Ctrl+Alt+H to replace with regex (when it's implemented)
+
 # TODO: Check if python regexps can be used for highlighting instead of the QegExpr limited (non-optimal matches)
-# TODO: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
 # TODO: spell-check (aspell? hunspell?)
-# TODO: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too.
-# TODO: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
-       # "fixed", the search keyword overrides the others (it seems at least in practice)
-# TODO: Replace should create a report of how many instances were replaced!
-# TODO: Bind Ctrl+H to replace (when it's implemented)
-# TODO: Bind Ctrl+Alt+H to replace with regex (when it's implemented)
 # TODO: During a merge make OPTIONAL the merging of pending lines (prompt a dialogue to the user)
 # TODO: During a LOAD do a CLEAN LOAD of the pending lines . (or make it OPTIONAL? a) If file exists, and b) if the translator wants to load those and c) option to merge.
-# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
 # TODO: Sorting books (library catalogue cards MI2:SE) uses system locale. It should use a locale associated with the selected encoding!
 
 ######
@@ -433,7 +435,6 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui = None
         self.statusLoadingAFile = False
         self.jSettingsInMemDict = dict()
-        self.initHighlightRules()
         self.ignoreQuoteTableResizeEventFlg = False
         if getattr(sys, 'frozen', None):
             self.basedir = sys._MEIPASS
@@ -575,6 +576,18 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionShow_Highlighting.connect(self.ui.actionShow_Highlighting, QtCore.SIGNAL('toggled(bool)'), self.showHideDefaultHighlighing)
         self.ui.searchModeRB.toggle()
 
+        # HANDLING INIT HIGHLIGHTING (RETRIEVE FROM DB) ###
+        # check with retrieved settings to set the highlighting status
+        if(self.jSettingsInMemDict is not None and self.jSettingsInMemDict.has_key('showHighlighting')):
+            if(self.jSettingsInMemDict['showHighlighting'] == True):
+                self.ui.actionShow_Highlighting.toggle()
+        else: #default (enable highlighting)
+            self.ui.actionShow_Highlighting.toggle()
+        if self.ui.actionShow_Highlighting.isChecked():
+            self.initHighlightRules()
+
+        # #################################################
+
         # todo: Match Case initialise!
         QtCore.QObject.connect(self.ui.selGameCmBx, QtCore.SIGNAL("currentIndexChanged(const QString)"), self.loadSelectedGameID)
         #
@@ -701,10 +714,12 @@ class MyMainWindow(QtGui.QMainWindow):
             if self.jSettingsInMemDict is not None:
                 try:
                     self.jSettingsInMemDict['lastDesktopScreenNumber'] = QtGui.QApplication.desktop().screenNumber(self.ui)
+                    self.jSettingsInMemDict['showHighlighting'] = self.ui.actionShow_Highlighting.isChecked()
                     #print "Detected display", self.jSettingsInMemDict['lastDesktopScreenNumber']
                 except:
                     #print "Exception in detecing display"
                     self.jSettingsInMemDict['lastDesktopScreenNumber'] = 0
+                    self.jSettingsInMemDict['showHighlighting'] = True
 
             if self.jSettingsInMemDict is not None: # and len(self.jSettingsInMemDict) > 0:
                 ##print "Session has something to save"
@@ -2916,40 +2931,54 @@ class MyMainWindow(QtGui.QMainWindow):
     #    STOP does not replace, unhighlights from "selected" and presents report (replaced x out of y total matches) ---> END
     #    REPLACE ALL replaces all instances without prompting anymore. At the end (no more matches) presents a report ----> END
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
+    #   TODO we need different kind of highlighting for "active match instance to replace"
+    #   TODO we need to exclude column 0 from replace mode. (or show a message that it's not allowed/it has no purpose)
     def replaceOnceMatchClickedButton(self, checked):
         ##print "replaceOnceMatch clicked"
+        totalMatches = 0
+        totalReplaces = 0
         self.replaceModeIsOngoing = True
         while(self.replaceModeIsOngoing):
-            # break if no matches, or explicitly select stop from dialogue.
-            msgBox = QMessageBox(self.ui)
-            msgBox.setWindowTitle ("Replace Matching String...")
-            msgBox.setText("Do you want to replace this instance?")
-            yesReplaceButton = msgBox.addButton(self.tr("Replace"), QMessageBox.YesRole)
-            noReplaceButton = msgBox.addButton(self.tr("Skip"), QMessageBox.NoRole)
-            stopButton = msgBox.addButton(QMessageBox.Cancel)
-            replaceAllButton = msgBox.addButton(self.tr("Replace All"), QMessageBox.YesRole)
-            msgBox.setDefaultButton(yesReplaceButton)
-            reply = msgBox.exec_()
-            if msgBox.clickedButton() == yesReplaceButton:
-                # replace
-                #print "Replace and continue"
-                pass
-            elif msgBox.clickedButton() == noReplaceButton:
-                # skip
-                #print "Skip replace"
-                pass
-            elif msgBox.clickedButton() == stopButton: #also catches click on the [X] of dialogue
-                # Stop
-                #print "Stop replace"
-                self.replaceModeIsOngoing = False
-            elif msgBox.clickedButton() == replaceAllButton:
-                # "Replace All"
-                #print "Replace all"
-                pass
+            foundMatch = False
+
+            foundMatch = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None )
+            if foundMatch:
+                totalMatches += 1
+                # break if no matches, or explicitly select stop from dialogue.
+                msgBox = QMessageBox(self.ui)
+                msgBox.setWindowTitle ("Replace Matching String...")
+                msgBox.setText("Do you want to replace this instance?")
+                yesReplaceButton = msgBox.addButton(self.tr("Replace"), QMessageBox.YesRole)
+                noReplaceButton = msgBox.addButton(self.tr("Skip"), QMessageBox.NoRole)
+                stopButton = msgBox.addButton(QMessageBox.Cancel)
+                replaceAllButton = msgBox.addButton(self.tr("Replace All"), QMessageBox.YesRole)
+                msgBox.setDefaultButton(yesReplaceButton)
+                reply = msgBox.exec_()
+                if msgBox.clickedButton() == yesReplaceButton:
+                    # replace
+                    totalReplaces += 1
+                    #print "Replace and continue"
+                    pass
+                elif msgBox.clickedButton() == noReplaceButton:
+                    # skip
+                    #print "Skip replace"
+                    pass
+                elif msgBox.clickedButton() == stopButton: #also catches click on the [X] of dialogue
+                    # Stop
+                    #print "Stop replace"
+                    self.replaceModeIsOngoing = False
+                elif msgBox.clickedButton() == replaceAllButton:
+                    # "Replace All"
+                    #print "Replace all"
+                    pass
+                else:
+                    #print "something else happened"
+                    self.replaceModeIsOngoing = False
+                #print "reply: ", reply
             else:
-                #print "something else happened"
                 self.replaceModeIsOngoing = False
-            #print "reply: ", reply
+                # TODO: show report if any replaces were made!
+
         return
 
     def replaceAllMatchClickedButton(self, checked):
@@ -3005,7 +3034,7 @@ class MyMainWindow(QtGui.QMainWindow):
             search_wrap = False
         if pMatchCase <> None:
             match_case = pMatchCase
-        if self.ui.findMatchCaseChBx.isChecked()== True:
+        elif self.ui.findMatchCaseChBx.isChecked()== True:
             match_case = True
 
         if pFindSpecialLinesMode == None:
@@ -3089,13 +3118,13 @@ class MyMainWindow(QtGui.QMainWindow):
         elif search_wrap == False and weHadAMatch == False and search_direction == "down" and startRowOfSearch == 0:
             reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
         elif search_wrap == False and weHadAMatch == False and ( (search_direction == "down" and startRowOfSearch > 0) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1) ) :
-            reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Information message", "End of file reached. No matches were found! Do you want to continue search from the begining of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+            reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Information message", "End of file reached. No matches were found! Do you want to continue search from the beginning of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
             if reply == QtGui.QMessageBox.Yes:
                 weHadAMatch = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,wrap_start,startRowOfSearch, searchInColumnNumber, search_direction, match_case)
                 if weHadAMatch == False:
                     reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
 
-        return
+        return weHadAMatch
 
 #   Internal method for matching keywords, used by the find (findNextMatchingStrLineInTable) method.
 #
