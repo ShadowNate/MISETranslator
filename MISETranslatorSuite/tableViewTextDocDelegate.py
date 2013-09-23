@@ -46,7 +46,7 @@ class TextDocDelegate(QStyledItemDelegate):
         editor = QtGui.QTextEdit(parent)
         editor.setFont(self.font)
 
-        self.highlighter = Highlighter(editor.document(), index.column())
+        self.highlighter = Highlighter(editor.document(), index.column(), index.row())
 
         return editor
 
@@ -71,7 +71,7 @@ class TextDocDelegate(QStyledItemDelegate):
 
             doc.setDefaultTextOption(docTextOption)
 #            FilterSyntaxHighlighter* highlighter = new FilterSyntaxHighlighter(regExp, doc);
-            highlighter = Highlighter(doc, index.column())
+            highlighter = Highlighter(doc, index.column(), index.row())
             highlighter.rehighlight()
 
             #QAbstractTextDocumentLayout :: PaintContext context;
@@ -171,10 +171,11 @@ class HighlightingRule:
 class Highlighter(QtGui.QSyntaxHighlighter):
 
     parentColNumber = -1
-    def __init__(self, parent=None, pParntColNum=-1):
+    def __init__(self, parent=None, pParntColNum=-1, pParntRowNum=-1):
         super(Highlighter, self).__init__(parent)
         highlightRulesGlobal.addHighlighterWatcher(self)
         self.parentColNumber = pParntColNum
+        self.parentRowNumber = pParntRowNum
         self.multiLineCommentFormat = QtGui.QTextCharFormat()
         self.multiLineCommentFormat.setForeground(QtCore.Qt.red)
         self.commentStartExpression = QtCore.QRegExp("/\\*")
@@ -182,8 +183,8 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 
     def highlightBlock(self, text):
         #print "checking hight"
-        for pattern, format, forColumnNum in highlightRulesGlobal.getAllHighlightRules():
-            if(self.parentColNumber == forColumnNum or forColumnNum==-1 ):
+        for pattern, format, forColumnNum, forRowNum in highlightRulesGlobal.getAllHighlightRules():
+            if((self.parentColNumber == forColumnNum or forColumnNum==-1 ) and (self.parentRowNumber == forRowNum or forRowNum==-1)):
                 expression = QtCore.QRegExp(pattern)
                 index = expression.indexIn(text)
                 while index >= 0:
