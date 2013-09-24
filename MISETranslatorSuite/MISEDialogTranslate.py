@@ -2962,6 +2962,7 @@ class MyMainWindow(QtGui.QMainWindow):
     #
     #   TODO Implementation of replace all.
     #   TODO Implementation of replace
+    #   TODO Implementation of replace with simple reg expressions. No groups!
     #   TODO Assess need of non-modal replace dialogue
     ##  DONE Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
     ##  DONE Replace should start from current index and check that first (not the next one!)
