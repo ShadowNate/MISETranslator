@@ -2934,6 +2934,7 @@ class MyMainWindow(QtGui.QMainWindow):
     #
     #   TODO Assess need of non-modal replace dialogue
     #   TODO Implementation of replace all.
+    #   TODO Implementation of replace
     #   TODO Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
     #   TODO Replace should start from current index and check that first (not the next one!)
     ##  DONE BUG: search for "le fourneau" with no-wrap -> you reached the end of file. Continue? No --> You reached the beginning of the search!
