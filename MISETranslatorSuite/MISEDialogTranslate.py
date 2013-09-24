@@ -2935,8 +2935,8 @@ class MyMainWindow(QtGui.QMainWindow):
     #   TODO Assess need of non-modal replace dialogue
     #   TODO Implementation of replace all.
     #   TODO Implementation of replace
-    #   TODO Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
     #   TODO Replace should start from current index and check that first (not the next one!)
+    #   TODO Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
     ##  DONE BUG: search for "le fourneau" with no-wrap -> you reached the end of file. Continue? No --> You reached the beginning of the search!
     ##  DONE Need to show somehow the active cell. (either non-modal dialogue, or mention the row number?). DONE FOR NOW: Show row number
     ##  DONE we need different kind of highlighting for "active match instance to replace"
@@ -2968,12 +2968,14 @@ class MyMainWindow(QtGui.QMainWindow):
             reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             return
         self.replaceModeIsOngoing = True
+        mySearchMode = "replaceFirst"
         while(self.replaceModeIsOngoing):
             foundMatch = False
-            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "replace" )
+            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = mySearchMode)
             if countMatches and numOfMatchesInCell > 0:
                 totalMatches += numOfMatchesInCell
             if firstMatchingRow == -1 and foundRowNum > -1:
+                mySearchMode = "replace" #after first match of first search, we set the mode to simple replace (to check from the next cell, not the current one).
                 firstMatchingRow = foundRowNum
             elif errStat <> -3 and foundRowNum != -1 and foundRowNum == firstMatchingRow: #full circle search. Prompt for continue?
                 if countMatches:
@@ -3129,8 +3131,8 @@ class MyMainWindow(QtGui.QMainWindow):
 #   Internal function for searching for matching strings (inline find)
 #   pFindSpecialLinesMode = "marked", "changed", "unchanged", "conflicted"
 #   errstat : -1 (no search value), -2 (too few chars), -3 (replace mode, but not original text column selected), -4 no more matches
-#   pSearchMode can be "search", "replace" or "earlyScan"
-    def findNextMatchingStrLineInTable(self, pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "search", pEarlyScanLastRowFound = -1 ):
+#   pSearchMode can be "search", "replace" , "replaceFirst" , or "earlyScan"
+    def findNextMatchingStrLineInTable(self, pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "search", pEarlyScanLastRowFound = None ):
         global listOfEnglishLinesSpeechInfo
         global listOfUntranslatedLinesSpeechInfo
         retNumOfMatchesInCell = 0
@@ -3187,7 +3189,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
             if self.ui.OriginalOrTransCmbBx.currentText() <> "Original Text":
                  searchInColumnNumber = 1
-            if pSearchMode == "replace" and searchInColumnNumber != 1:
+            if (pSearchMode == "replace" or pSearchMode == "replaceFirst") and searchInColumnNumber != 1:
                 errstat = -3
                 return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat
 
@@ -3201,7 +3203,7 @@ class MyMainWindow(QtGui.QMainWindow):
             searchInColumnNumber = 3
 
         startRowOfSearch = 0
-        if pSearchMode <> "earlyScan":
+        if pSearchMode == "search" or pSearchMode == "replace" or (pSearchMode == "earlyScan" and pEarlyScanLastRowFound is None ):
             startRowOfSearchIndex = self.quoteTableView.currentIndex()
             if (search_mode == "next" or search_mode == "start") and search_direction == "down":
                 if (startRowOfSearchIndex is not None) :
@@ -3213,8 +3215,14 @@ class MyMainWindow(QtGui.QMainWindow):
                     startRowOfSearch = startRowOfSearchIndex.row() - 1
                 elif (startRowOfSearchIndex is  None):
                     startRowOfSearch = plithosOfQuotes - 1
-        else:
+        elif pSearchMode == "earlyScan" and pEarlyScanLastRowFound is not None:
             startRowOfSearch = pEarlyScanLastRowFound + 1
+        elif pSearchMode == "replaceFirst": # to be used for the first replace (start with the current cell, not the next one). Subsequent replaces will set the mode to "replace".
+            startRowOfSearchIndex = self.quoteTableView.currentIndex()
+            if (startRowOfSearchIndex is not None) :
+                startRowOfSearch = startRowOfSearchIndex.row()
+            elif (startRowOfSearchIndex is None):
+                startRowOfSearch = 0
 
         if (startRowOfSearch >= plithosOfQuotes and search_direction == "down" and search_wrap == True):
             startRowOfSearch = 0
@@ -3234,10 +3242,10 @@ class MyMainWindow(QtGui.QMainWindow):
         if  search_direction == "up":
             untilButWithoutRow = -1
 
-        weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,startRowOfSearch,untilButWithoutRow, searchInColumnNumber,search_direction, match_case, pSearchMode)
+        weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, startRowOfSearch, untilButWithoutRow, searchInColumnNumber,search_direction, match_case, pSearchMode)
         if weHadAMatch == False: #search from startRow to the end (or the top) and found nothing. Check if wrapping is set to continue searching)
             if search_wrap == True  and ( (search_direction == "down"  and startRowOfSearch > 0  ) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1 ) ):
-                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,wrap_start,startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
+                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
         # if still is false then print message!
         if search_wrap == True and weHadAMatch == False:
             if pSearchMode <> "earlyScan":
@@ -3254,7 +3262,7 @@ class MyMainWindow(QtGui.QMainWindow):
         elif pSearchMode <> "earlyScan" and search_wrap == False and weHadAMatch == False and ( (search_direction == "down" and startRowOfSearch > 0) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1) ) :
             reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Information message", "End of file reached. No matches were found! Do you want to continue search from the beginning of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
             if reply == QtGui.QMessageBox.Yes:
-                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr,wrap_start,startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
+                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
                 if weHadAMatch == False:
                     reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
                     errstat = -4
@@ -3325,7 +3333,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retRowNum = index.row()
                     ##print "Match. Row: ", index.row()
                     retBool = True
-                    if pSearchMode == "replace":
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):
                         highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                     break
             elif pFindSpecialLinesMode == "marked" or  pFindSpecialLinesMode == "conflicted" or pFindSpecialLinesMode == "changed":
@@ -3339,7 +3347,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retColNum = indexToSelect.column()
                     retRowNum = indexToSelect.row()
                     retBool = True
-                    if pSearchMode == "replace":
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):  #does it even have any meaning in special cells?
                         highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                     break
             elif pFindSpecialLinesMode == "unchanged":
@@ -3353,7 +3361,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retColNum = indexToSelect.column()
                     retRowNum = indexToSelect.row()
                     retBool = True
-                    if pSearchMode == "replace":
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"): #does it even have any meaning in special cells?
                         highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                     break
 
