@@ -47,12 +47,17 @@ import json
 # DONE: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
 #       |-   "FIXED", the search keyword overrides the others (it seems at least in practice)
 
-# TODO: Replace should create a report of how many instances were replaced!
+# DONE: FIXED CROPPING IN NARROW COLUMNS (width is taken now into account too)
+        # PAINT BUG: line 333 of fr.speech.info. When columns are narrow, then the text (which has no spaces overlaps in the next column!!!)
+        # WHY IS 333 a special case and 310 is not?
+        # It is related to the alternate row painting. The alternates (grey) behave better (hide text), the normal do not!
+# DONE: Fixed: selection coloring is lost when losing focus (a stylesheet on the tableview defining the color fixed it!)
+# DONE: Replace should create a report of how many instances were replaced!
+# DONE: USE python regexps for highlighting instead of the QegExpr limited (non-optimal matches)
 # TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
 # TODO: Bind Ctrl+H to replace (when it's implemented)
 # TODO: Bind Ctrl+Alt+H to replace with regex (when it's implemented)
 
-# TODO: Check if python regexps can be used for highlighting instead of the QegExpr limited (non-optimal matches)
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
@@ -347,6 +352,10 @@ class MISEQuoteTableView(QtGui.QTableView):
         self.setGeometry(27, 130, 1095, 626)
         self.setFont(QtGui.QFont('Arial', 10))
         self.setAlternatingRowColors(True)
+##        self.setStyleSheet("background-color: #fbfbfb;"
+##                           "alternate-background-color: #f6f6f6;"
+##                           "selection-background-color: #3399ff;");
+        self.setStyleSheet("selection-background-color: #3399ff;")
         self.horizontalHeader().setCascadingSectionResizes(True)
         self.horizontalHeader().setDefaultSectionSize(400)
         self.horizontalHeader().setHighlightSections(True)
@@ -2849,12 +2858,21 @@ class MyMainWindow(QtGui.QMainWindow):
                   "\\bBarney\\b","\\bGout\\b", "\\bFester\\b","\\bLeach\\b", "\\bGordo\\b", "\\bSkunk[-]Eye\\b",
                   "\\bRICKETTS\\b", "\\bQUAGMYRES\\b", "\\bGROUTS\\b"]
 
+        myReFlags = 0
+        myReFlags |= re.UNICODE
         for patternExpStr in keywordPatterns:
-            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = True)
+            patternExpStrCompiledPtrn = re.compile(patternExpStr, myReFlags)
+            #highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = True)
+            highlightRulesGlobal.addHighlightRule(patternExpStrCompiledPtrn, keywordFormat)
 
-        keywordPatternsIS = ["\\bguybrush\\b", "\\bthreepwood\\b", "\\blechuck\\b", "\\bchuckie\\b"]
+        myReFlags = 0
+        myReFlags |= re.IGNORECASE
+        myReFlags |= re.UNICODE
+        keywordPatternsIS = [r"\bguybrush\b", r"\bthreepwood\b", r"\blechuck\b", r"\bchuckie\b"]
         for patternExpStr in keywordPatternsIS:
-            highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = False)
+            patternExpStrCompiledPtrn = re.compile(patternExpStr, myReFlags)
+            #highlightRulesGlobal.addHighlightRule(patternExpStr, keywordFormat, caseSensitivity = False)
+            highlightRulesGlobal.addHighlightRule(patternExpStrCompiledPtrn, keywordFormat)
 
 ##        classFormat = QtGui.QTextCharFormat()
 ##        classFormat.setFontWeight(QtGui.QFont.Bold)
@@ -2868,24 +2886,34 @@ class MyMainWindow(QtGui.QMainWindow):
         quotationFormat = QtGui.QTextCharFormat()
         quotationFormat.setForeground(QtCore.Qt.darkGreen)
         #highlightRulesGlobal.addHighlightRule("\"(.*)\"", quotationFormat)
-        highlightRulesGlobal.addHighlightRule( r'[\s]("([^\\"]|\\.)*")|(^"([^\\"]|\\.)*")', quotationFormat)
-        highlightRulesGlobal.addHighlightRule( r"[\s](`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)", quotationFormat)
-        highlightRulesGlobal.addHighlightRule( r"\\n(`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)", quotationFormat)
-        highlightRulesGlobal.addHighlightRule( r"[\s]('([^\\']|\\.)*')|(^'([^\\']|\\.)*')", quotationFormat)
-        highlightRulesGlobal.addHighlightRule( r"([\sA-Za-z0-9]+)0x94", quotationFormat)
+        myReFlags = 0
+        myReFlags |= re.UNICODE
+        quotationPatterns = [r'[\s]("([^\\"]|\\.)*")|(^"([^\\"]|\\.)*")' ,
+                             r"[\s](`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)",
+                             r"\\n(`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)",
+                             r"[\s]('([^\\']|\\.)*')|(^'([^\\']|\\.)*')",
+                             r"([\sA-Za-z0-9]+)0x94"]
+        for patternExpStr in quotationPatterns:
+            patternExpStrCompiledPtrn = re.compile(patternExpStr, myReFlags)
+            #highlightRulesGlobal.addHighlightRule(patternExpStr, quotationFormat)
+            highlightRulesGlobal.addHighlightRule(patternExpStrCompiledPtrn, quotationFormat)
 
         specialCharsFormat = QtGui.QTextCharFormat()
         specialCharsFormat.setFontItalic(True)
         specialCharsFormat.setForeground(QtCore.Qt.blue)
-#        highlightRulesGlobal.addHighlightRule(r"(0x[A-Fa-f0-9]{2})|(\\n)", specialCharsFormat)
-        highlightRulesGlobal.addHighlightRule(r"(0x[A-F0-9]{2})|(\\n)", specialCharsFormat)
+        patternExpStrCompiledPtrn = re.compile(r"(0x[A-F0-9]{2})|(\\n)", myReFlags)
+        highlightRulesGlobal.addHighlightRule(patternExpStrCompiledPtrn, specialCharsFormat)
 
 # {var:global_269} {string:global_39} {var:local_1}
         ingameVariablesFormat = QtGui.QTextCharFormat()
         ingameVariablesFormat.setForeground(QtCore.Qt.red)
-        highlightRulesGlobal.addHighlightRule(r"{var:[^}]*}", ingameVariablesFormat)
-        highlightRulesGlobal.addHighlightRule(r"\{verb:[^\}]*\}", ingameVariablesFormat)
-        highlightRulesGlobal.addHighlightRule(r"\{string:[^\}]*\}", ingameVariablesFormat)
+        ingameVarPatterns = [r"{var:[^}]*}" ,
+                             r"\{verb:[^\}]*\}",
+                             r"\{string:[^\}]*\}"]
+        for patternExpStr in ingameVarPatterns:
+            patternExpStrCompiledPtrn = re.compile(patternExpStr, myReFlags)
+            #highlightRulesGlobal.addHighlightRule(patternExpStr, ingameVariablesFormat)
+            highlightRulesGlobal.addHighlightRule(patternExpStrCompiledPtrn, ingameVariablesFormat)
 
 ##        functionFormat = QtGui.QTextCharFormat()
 ##        functionFormat.setFontItalic(True)
@@ -2932,11 +2960,11 @@ class MyMainWindow(QtGui.QMainWindow):
     #    REPLACE ALL replaces all instances without prompting anymore. At the end (no more matches) presents a report ----> END
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
     #
-    #   TODO Assess need of non-modal replace dialogue
     #   TODO Implementation of replace all.
     #   TODO Implementation of replace
-    #   TODO Replace should start from current index and check that first (not the next one!)
-    #   TODO Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
+    #   TODO Assess need of non-modal replace dialogue
+    ##  DONE Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
+    ##  DONE Replace should start from current index and check that first (not the next one!)
     ##  DONE BUG: search for "le fourneau" with no-wrap -> you reached the end of file. Continue? No --> You reached the beginning of the search!
     ##  DONE Need to show somehow the active cell. (either non-modal dialogue, or mention the row number?). DONE FOR NOW: Show row number
     ##  DONE we need different kind of highlighting for "active match instance to replace"
@@ -3311,9 +3339,11 @@ class MyMainWindow(QtGui.QMainWindow):
             keyStr = keyStr.replace('^',r'\^')
             keyStr = keyStr.replace('$',r'\$')
 
+            keyStrCompiledPtrn = re.compile(keyStr, myReFlags)
             matchKeyFormat = QtGui.QTextCharFormat()
             matchKeyFormat.setBackground(QtCore.Qt.green)
-            highlightRulesGlobal.setSearchHighlightRule(keyStr, matchKeyFormat, match_caseFlg, columnNumber)
+            #highlightRulesGlobal.setSearchHighlightRule(keyStr, matchKeyFormat, match_caseFlg, columnNumber)
+            highlightRulesGlobal.setSearchHighlightRule(keyStrCompiledPtrn, matchKeyFormat, columnNumber)
             replaceKeyFormat  = QtGui.QTextCharFormat()
             replaceKeyFormat.setBackground(QtCore.Qt.blue)
             replaceKeyFormat.setForeground(QtCore.Qt.white)
@@ -3322,7 +3352,8 @@ class MyMainWindow(QtGui.QMainWindow):
             index =  self.quoteTableView.model().index(rowi, columnNumber, QModelIndex())
             datoTmp = self.quoteTableView.model().data(index).toPyObject()
             if pFindSpecialLinesMode == None:
-                matchesList = re.findall(keyStr, datoTmp, flags=myReFlags)
+                #matchesList = re.findall(keyStr, datoTmp, flags=myReFlags)
+                matchesList = keyStrCompiledPtrn.findall(datoTmp)
                 if(matchesList) <> None and len(matchesList) > 0:
                     if pSearchMode <> "earlyScan":
                         self.quoteTableView.selectionModel().select(index, QItemSelectionModel.ClearAndSelect)
@@ -3334,7 +3365,8 @@ class MyMainWindow(QtGui.QMainWindow):
                     ##print "Match. Row: ", index.row()
                     retBool = True
                     if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):
-                        highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
             elif pFindSpecialLinesMode == "marked" or  pFindSpecialLinesMode == "conflicted" or pFindSpecialLinesMode == "changed":
                 if datoTmp == True:
@@ -3348,7 +3380,8 @@ class MyMainWindow(QtGui.QMainWindow):
                     retRowNum = indexToSelect.row()
                     retBool = True
                     if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):  #does it even have any meaning in special cells?
-                        highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
             elif pFindSpecialLinesMode == "unchanged":
                 if datoTmp == False:
@@ -3362,7 +3395,8 @@ class MyMainWindow(QtGui.QMainWindow):
                     retRowNum = indexToSelect.row()
                     retBool = True
                     if (pSearchMode == "replace" or pSearchMode == "replaceFirst"): #does it even have any meaning in special cells?
-                        highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
+                        highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
 
         return retBool, retNumOfMatchesInCell, retColNum, retRowNum

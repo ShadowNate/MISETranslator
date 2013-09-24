@@ -12,32 +12,55 @@ _hlmodul_searchhighlightingRule = []  # just one rule, but with Column Index to 
 _hlmodul_replacehighlightingRule = [] # just one rule, but with Column Index AND row index
 _hlmodul_highlighteRulesWatchers = []
 
-def setSearchHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
-    qtCaseSens = Qt.CaseSensitive
-    if not caseSensitivity:
-        qtCaseSens = Qt.CaseInsensitive
+
+def setSearchHighlightRule(ruleExprCompiled, ruleClassFormat, columnToMatch = -1, rowToMatch = -1):
     if len(_hlmodul_searchhighlightingRule) == 0:
-        _hlmodul_searchhighlightingRule.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+        _hlmodul_searchhighlightingRule.append((ruleExprCompiled, ruleClassFormat, columnToMatch, rowToMatch))
     else:
-        _hlmodul_searchhighlightingRule[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch)
+        _hlmodul_searchhighlightingRule[0] = (ruleExprCompiled, ruleClassFormat, columnToMatch, rowToMatch)
     updateWatchers()
 
-def setReplaceHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
-    qtCaseSens = Qt.CaseSensitive
-    if not caseSensitivity:
-        qtCaseSens = Qt.CaseInsensitive
+def setReplaceHighlightRule(ruleExprCompiled, ruleClassFormat, columnToMatch = -1, rowToMatch = -1):
     if len(_hlmodul_replacehighlightingRule) == 0:
-        _hlmodul_replacehighlightingRule.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+        _hlmodul_replacehighlightingRule.append((ruleExprCompiled, ruleClassFormat, columnToMatch, rowToMatch))
     else:
-        _hlmodul_replacehighlightingRule[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch)
+        _hlmodul_replacehighlightingRule[0] = (ruleExprCompiled, ruleClassFormat, columnToMatch, rowToMatch)
     updateWatchers()
 
-def addHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
-    qtCaseSens = Qt.CaseSensitive
-    if not caseSensitivity:
-        qtCaseSens = Qt.CaseInsensitive
-    _hlmodul_highlightingRules.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+def addHighlightRule(ruleExprCompiled, ruleClassFormat, columnToMatch = -1, rowToMatch = -1):
+    _hlmodul_highlightingRules.append((ruleExprCompiled, ruleClassFormat, columnToMatch, rowToMatch))
     updateWatchers()
+
+
+
+
+
+##def setSearchHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
+##    qtCaseSens = Qt.CaseSensitive
+##    if not caseSensitivity:
+##        qtCaseSens = Qt.CaseInsensitive
+##    if len(_hlmodul_searchhighlightingRule) == 0:
+##        _hlmodul_searchhighlightingRule.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+##    else:
+##        _hlmodul_searchhighlightingRule[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch)
+##    updateWatchers()
+##
+##def setReplaceHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
+##    qtCaseSens = Qt.CaseSensitive
+##    if not caseSensitivity:
+##        qtCaseSens = Qt.CaseInsensitive
+##    if len(_hlmodul_replacehighlightingRule) == 0:
+##        _hlmodul_replacehighlightingRule.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+##    else:
+##        _hlmodul_replacehighlightingRule[0] = (QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch)
+##    updateWatchers()
+##
+##def addHighlightRule(ruleExprStr, ruleClassFormat, caseSensitivity = True, columnToMatch = -1, rowToMatch = -1):
+##    qtCaseSens = Qt.CaseSensitive
+##    if not caseSensitivity:
+##        qtCaseSens = Qt.CaseInsensitive
+##    _hlmodul_highlightingRules.append((QtCore.QRegExp(ruleExprStr, qtCaseSens), ruleClassFormat, columnToMatch, rowToMatch))
+##    updateWatchers()
 
 def updateWatchers():
     for hlWatcher in _hlmodul_highlighteRulesWatchers:

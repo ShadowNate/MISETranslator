@@ -6,6 +6,7 @@
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import re
 import highlightRulesGlobal
 
 
@@ -84,6 +85,10 @@ class TextDocDelegate(QStyledItemDelegate):
             painter.setClipRect(docuRect);
             painter.translate( docuRect.x(), docuRect.y() )
             doc.documentLayout().draw(painter,context)
+            #origColor= index.model().parent().palette().color(QPalette.Base)
+            #if  (index.row() % 2) > 0:
+            #    origColor= index.model().parent().palette().color(QPalette.AlternateBase)
+            #index.model().item(index.row(),index.column()).setBackground(origColor)
             painter.restore()
             painter.save()
             if hasMore:
@@ -101,18 +106,27 @@ class TextDocDelegate(QStyledItemDelegate):
 
             painter.restore()
 
+
     def getCornerTextDocumentRect(self, option, cornerDocu):
         hasMore = False
         docu_point = None
         docu_croppedSize = None
-        if cornerDocu.size().toSize().height() <= option.rect.height() :
+        if cornerDocu.size().toSize().height() <= option.rect.height() and cornerDocu.size().toSize().width() <= option.rect.width():
             docu_point = QPoint (option.rect.x() + option.rect.width() - cornerDocu.size().toSize().width(),
-            					 option.rect.y() +
-            					 (option.rect.height()  - cornerDocu.size().toSize().height()))
+            					 option.rect.y() + (option.rect.height()  - cornerDocu.size().toSize().height()))
             docu_croppedSize= QSize(cornerDocu.size().toSize().width(), cornerDocu.size().toSize().height()  ) #width, height
-        else:
+        elif cornerDocu.size().toSize().height() > option.rect.height() and cornerDocu.size().toSize().width() <= option.rect.width():
             docu_point = QPoint (option.rect.x() + option.rect.width() - cornerDocu.size().toSize().width(), option.rect.y())
-            docu_croppedSize = (cornerDocu.size().toSize().width(), option.rect.height() )
+            docu_croppedSize = QSize(cornerDocu.size().toSize().width(), option.rect.height() )
+            hasMore = True
+        elif cornerDocu.size().toSize().height() <= option.rect.height() and cornerDocu.size().toSize().width() > option.rect.width():
+            docu_point = QPoint(option.rect.x(),
+            					 option.rect.y() + (option.rect.height()  - cornerDocu.size().toSize().height()))
+            docu_croppedSize = QSize(option.rect.width(), cornerDocu.size().toSize().height() )
+            hasMore = True
+        else: #both are larger and need crop
+            docu_point = QPoint (option.rect.x(), option.rect.y())
+            docu_croppedSize = QSize(option.rect.width(), option.rect.height() )
             hasMore = True
         return QRect(docu_point, docu_croppedSize), hasMore
 
@@ -120,13 +134,21 @@ class TextDocDelegate(QStyledItemDelegate):
         hasMore = False
         docu_point = None
         docu_croppedSize = None
-        if textDocu.size().toSize().height() <= option.rect.height() :
+        if textDocu.size().toSize().height() <= option.rect.height() and textDocu.size().toSize().width() <= option.rect.width():
             docu_point = QPoint (option.rect.x(),
-            					 option.rect.y() +
-            					 (option.rect.height()  - textDocu.size().toSize().height()) / 2)
+            					 option.rect.y() + (option.rect.height()  - textDocu.size().toSize().height()) / 2)
             docu_croppedSize= QSize(textDocu.size().toSize().width(), (option.rect.height()  + textDocu.size().toSize().height()) / 2 ) #width, height
-        else:
-            docu_point = QPoint (option.rect.x(),option.rect.y())
+        elif textDocu.size().toSize().height() > option.rect.height() and textDocu.size().toSize().width() <= option.rect.width():
+            docu_point = QPoint (option.rect.x(), option.rect.y())
+            docu_croppedSize = QSize(textDocu.size().toSize().width(), option.rect.height() )
+            hasMore = True
+        elif textDocu.size().toSize().height() <= option.rect.height() and textDocu.size().toSize().width() > option.rect.width():
+            docu_point = QPoint (option.rect.x(),
+            					 option.rect.y() + (option.rect.height()  - textDocu.size().toSize().height()) / 2)
+            docu_croppedSize = QSize(option.rect.width(), (option.rect.height()  + textDocu.size().toSize().height()) / 2  )
+            hasMore = True
+        else: #both are larger and need crop
+            docu_point = QPoint (option.rect.x(), option.rect.y())
             docu_croppedSize = QSize(option.rect.width(), option.rect.height() )
             hasMore = True
         return QRect(docu_point, docu_croppedSize), hasMore
@@ -176,21 +198,41 @@ class Highlighter(QtGui.QSyntaxHighlighter):
         highlightRulesGlobal.addHighlighterWatcher(self)
         self.parentColNumber = pParntColNum
         self.parentRowNumber = pParntRowNum
-        self.multiLineCommentFormat = QtGui.QTextCharFormat()
-        self.multiLineCommentFormat.setForeground(QtCore.Qt.red)
-        self.commentStartExpression = QtCore.QRegExp("/\\*")
-        self.commentEndExpression = QtCore.QRegExp("\\*/")
+        #self.multiLineCommentFormat = QtGui.QTextCharFormat()
+        #self.multiLineCommentFormat.setForeground(QtCore.Qt.red)
+        #self.commentStartExpression = QtCore.QRegExp("/\\*")
+        #self.commentEndExpression = QtCore.QRegExp("\\*/")
 
     def highlightBlock(self, text):
         #print "checking hight"
-        for pattern, format, forColumnNum, forRowNum in highlightRulesGlobal.getAllHighlightRules():
+        #for pattern, format, forColumnNum, forRowNum in highlightRulesGlobal.getAllHighlightRules():
+        for (compliledREpattern, format, forColumnNum, forRowNum) in highlightRulesGlobal.getAllHighlightRules():
             if((self.parentColNumber == forColumnNum or forColumnNum==-1 ) and (self.parentRowNumber == forRowNum or forRowNum==-1)):
-                expression = QtCore.QRegExp(pattern)
-                index = expression.indexIn(text)
-                while index >= 0:
-                    length = expression.matchedLength()
-                    self.setFormat(index, length, format)
-                    index = expression.indexIn(text, index + length)
+                resIter = compliledREpattern.finditer(text)
+                for elem in resIter:
+                    groupIndex = 1
+                    if len(elem.groups()) > 0:
+                        for groupIt in elem.groups():
+                            if (groupIt is not None):
+                                if (elem.start(groupIndex) != -1 and elem.end(groupIndex) != -1 and elem.start(groupIndex) != elem.end(groupIndex)):
+                                    index = elem.start(groupIndex)
+                                    length = elem.end(groupIndex) - index
+                                    #matchedString = elem.string[elem.start(groupIndex):elem.end(groupIndex)]
+                                    self.setFormat(index, length, format)
+                            groupIndex += 1
+                    elif (elem.start(0) != -1 and elem.end(0) != -1 and elem.start(0) != elem.end(0)):
+                            index = elem.start(0)
+                            length = elem.end(0) - index
+                            #matchedString = elem.string[elem.start(0):elem.end(0)]
+                            self.setFormat(index, length, format)
+
+##                expression = QtCore.QRegExp(pattern)
+##                index = expression.indexIn(text)
+##                while index >= 0:
+##                    length = expression.matchedLength()
+##                    self.setFormat(index, length, format)
+##                    index = expression.indexIn(text, index + length)
+
 
 ##        self.setCurrentBlockState(0)
 ##
