@@ -2888,10 +2888,10 @@ class MyMainWindow(QtGui.QMainWindow):
         #highlightRulesGlobal.addHighlightRule("\"(.*)\"", quotationFormat)
         myReFlags = 0
         myReFlags |= re.UNICODE
-        quotationPatterns = [r'[\s]("([^\\"]|\\.)*")|(^"([^\\"]|\\.)*")' ,
-                             r"[\s](`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)",
-                             r"\\n(`([^\\`]|\\.)*`)|(^`([^\\`]|\\.)*`)",
-                             r"[\s]('([^\\']|\\.)*')|(^'([^\\']|\\.)*')",
+        quotationPatterns = [r'(?:[\s]|\\n)("([^\\"]|\\.)*")(?:[^a-zA-Z]|$)|(^"([^\\"]|\\.)*")(?:[^a-zA-Z]|$)' ,
+                             r"(?:[\s]|\\n)(`([^\\`]|\\.)*`)(?:[^a-zA-Z]|$)|(^`([^\\`]|\\.)*`)(?:[^a-zA-Z]|$)",
+                             r"(?:[\s]|\\n)(`([^\\`]|\\.)*`)(?:[^a-zA-Z]|$)|(^`([^\\`]|\\.)*`)(?:[^a-zA-Z]|$)",
+                             r"(?:[\s]|\\n)('([^\\']|\\.)*')(?:[^a-zA-Z]|$)|(^'([^\\']|\\.)*')(?:[^a-zA-Z]|$)",
                              r"([\sA-Za-z0-9]+)0x94"]
         for patternExpStr in quotationPatterns:
             patternExpStrCompiledPtrn = re.compile(patternExpStr, myReFlags)
@@ -2931,6 +2931,9 @@ class MyMainWindow(QtGui.QMainWindow):
         return
 
     def replaceModeToggled(self, stateChecked):
+        # auto -set to translated text
+        self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
+
         if(stateChecked):
             ##print "replace Mode enabled", self.ui.replaceModeRB.isChecked()
             self.ui.replaceAllInQuotesBtn.show()
@@ -2941,6 +2944,9 @@ class MyMainWindow(QtGui.QMainWindow):
         return
 
     def replaceRegExModeToggled(self, stateChecked):
+        # auto -set to translated text
+        self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
+
         if(stateChecked):
             ##print "replace Mode enabled", self.ui.replaceModeRB.isChecked()
             self.ui.replaceAllInQuotesBtn.show()
@@ -2961,9 +2967,12 @@ class MyMainWindow(QtGui.QMainWindow):
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
     #
     #   TODO Implementation of replace all.
-    #   TODO Implementation of replace
     #   TODO Implementation of replace with simple reg expressions. No groups!
     #   TODO Assess need of non-modal replace dialogue
+    #   TODO: when no model is loaded, Clicking on "Replace"button for text returns "no matches found", erases search key and keeps replace key??? Same when clicking on the magnifying glass on replace mode
+    ##  DONE Implementation of replace
+    ##  DONE CRASH BUG: TypeError: expected string or buffer . at findall (3419), When opening a file and directly calling replace (click radio button, put a search string and replacement and click replace.
+    ##  DONE automatically set the selected column to be the "translated text" when switching to Replace mode.
     ##  DONE Need replacing of reg expr strings with compiled pattern objects for efficiency. Same for highlighting.
     ##  DONE Replace should start from current index and check that first (not the next one!)
     ##  DONE BUG: search for "le fourneau" with no-wrap -> you reached the end of file. Continue? No --> You reached the beginning of the search!
@@ -2983,6 +2992,9 @@ class MyMainWindow(QtGui.QMainWindow):
         totalMatches = 0        # only the ones actually visited in the replace mode by the user.
         totalReplaces = 0
         searchInColumnNumber = -1
+        # auto -set to translated text
+        self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
+
         # moved early column detection here:
         if self.ui.OriginalOrTransCmbBx.currentText() <> "Original Text":
                  searchInColumnNumber = 1
@@ -3038,7 +3050,21 @@ class MyMainWindow(QtGui.QMainWindow):
                 reply = msgBox.exec_()
                 if msgBox.clickedButton() == yesReplaceButton:
                     # replace
-                    totalReplaces += 1
+                    keyStr = self.ui.findStrTxtBx.text().strip()
+                    match_caseFlg = False
+                    if self.ui.findMatchCaseChBx.isChecked()== True:
+                        match_caseFlg = True
+                    replacementStr = self.ui.replaceWithStrTxtBx.text()
+                    myReFlags = 0
+                    if match_caseFlg == False:
+                        myReFlags |= re.IGNORECASE
+                    myReFlags |= re.UNICODE #fixes ignorecase state for greek letters!
+                    # to override the error when the re contains or ends in \
+                    compRegEx = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags)
+                    self.replaceAllInCell(foundRowNum, foundColNum, compRegEx, replacementStr)
+
+                    # increase count
+                    totalReplaces += numOfMatchesInCell
                     #print "Replace and continue"
                     pass
                 elif msgBox.clickedButton() == noReplaceButton:
@@ -3077,6 +3103,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def replaceAllMatchClickedButton(self, checked):
         ##print "replaceAllMatch clicked"
+        # auto -set to translated text
+        self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
+
         self.replaceModeIsOngoing = True
         reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Replace All Confirmation", "Are you sure you want to replace all instances?\nThis action cannot be undone.")
         if reply == QMessageBox.Yes:
@@ -3087,6 +3116,39 @@ class MyMainWindow(QtGui.QMainWindow):
             print "abort replace all"
             pass
         return
+
+    # count is assumed 0 (all should be replaced) and compiledPattern should include the flags)
+    def replaceAllInCell(self, cellIndexRow, cellIndexColumn, compiledPattern, replacementStr):
+        index =  self.quoteTableView.model().index(cellIndexRow, cellIndexColumn, QModelIndex())
+        datoTmp = self.quoteTableView.model().data(index).toPyObject()
+        newText = re.sub(compiledPattern, replacementStr, datoTmp)
+        #print "newText: ", newText
+        # set the text back in the cell!
+        self.quoteTableView.model().setData(index, newText, Qt.EditRole)
+        return
+
+    # compile a pattern for search or replacement
+    def produceCompiledRegExForSearchReplace(self, patternStr, regExpFlags = 0, advRegExpFlag = False):
+        retCompRegEx = None
+        if(not advRegExpFlag):
+            patternStr = patternStr.replace("\\", r"\\")
+            patternStr = patternStr.replace('[',r'\[')
+            patternStr = patternStr.replace(']',r'\]')
+            patternStr = patternStr.replace('?',r'\?')
+            patternStr = patternStr.replace('.',r'\.')
+            patternStr = patternStr.replace('+',r'\+')
+            patternStr = patternStr.replace('*',r'\*')
+            patternStr = patternStr.replace('|',r'\|')
+            patternStr = patternStr.replace('(',r'\(')
+            patternStr = patternStr.replace(')',r'\)')
+            patternStr = patternStr.replace('{',r'\{')
+            patternStr = patternStr.replace('}',r'\}')
+            patternStr = patternStr.replace('^',r'\^')
+            patternStr = patternStr.replace('$',r'\$')
+
+        retCompRegEx = re.compile(patternStr, regExpFlags)
+        return retCompRegEx
+
     #
     # TODO: we need to differential pTotalMatches (overall in the document), and pTotalTraversedMatches (how many the user has found/visited, clicking replace or skip. Again a cell could contain more than one matches; we need to account for that).
     #
@@ -3250,6 +3312,9 @@ class MyMainWindow(QtGui.QMainWindow):
             startRowOfSearchIndex = self.quoteTableView.currentIndex()
             if (startRowOfSearchIndex is not None) :
                 startRowOfSearch = startRowOfSearchIndex.row()
+                if startRowOfSearch < 0:
+                    startRowOfSearch = 0
+                #print startRowOfSearch
             elif (startRowOfSearchIndex is None):
                 startRowOfSearch = 0
 
@@ -3307,6 +3372,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #print keyStr
         #print pFindSpecialLinesMode == None
         #print search_direction
+        keyStrCompiledPtrn = None
         retBool = False
         retNumOfMatchesInCell = 0
         retColNum = -1
@@ -3324,23 +3390,25 @@ class MyMainWindow(QtGui.QMainWindow):
             if columnNumber > 0:
                 myReFlags |= re.UNICODE #fixes ignorecase state for greek letters!
             # to override the error when the re contains or ends in \
-            #keyStr = keyStr.replace('\\','\\\\')
-            keyStr = keyStr.replace("\\", r"\\")
-            keyStr = keyStr.replace('[',r'\[')
-            keyStr = keyStr.replace(']',r'\]')
-            keyStr = keyStr.replace('?',r'\?')
-            keyStr = keyStr.replace('.',r'\.')
-            keyStr = keyStr.replace('+',r'\+')
-            keyStr = keyStr.replace('*',r'\*')
-            keyStr = keyStr.replace('|',r'\|')
-            keyStr = keyStr.replace('(',r'\(')
-            keyStr = keyStr.replace(')',r'\)')
-            keyStr = keyStr.replace('{',r'\{')
-            keyStr = keyStr.replace('}',r'\}')
-            keyStr = keyStr.replace('^',r'\^')
-            keyStr = keyStr.replace('$',r'\$')
+            keyStrCompiledPtrn = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags)
 
-            keyStrCompiledPtrn = re.compile(keyStr, myReFlags)
+##            #keyStr = keyStr.replace('\\','\\\\')
+##            keyStr = keyStr.replace("\\", r"\\")
+##            keyStr = keyStr.replace('[',r'\[')
+##            keyStr = keyStr.replace(']',r'\]')
+##            keyStr = keyStr.replace('?',r'\?')
+##            keyStr = keyStr.replace('.',r'\.')
+##            keyStr = keyStr.replace('+',r'\+')
+##            keyStr = keyStr.replace('*',r'\*')
+##            keyStr = keyStr.replace('|',r'\|')
+##            keyStr = keyStr.replace('(',r'\(')
+##            keyStr = keyStr.replace(')',r'\)')
+##            keyStr = keyStr.replace('{',r'\{')
+##            keyStr = keyStr.replace('}',r'\}')
+##            keyStr = keyStr.replace('^',r'\^')
+##            keyStr = keyStr.replace('$',r'\$')
+##
+##            keyStrCompiledPtrn = re.compile(keyStr, myReFlags)
             matchKeyFormat = QtGui.QTextCharFormat()
             matchKeyFormat.setBackground(QtCore.Qt.green)
             #highlightRulesGlobal.setSearchHighlightRule(keyStr, matchKeyFormat, match_caseFlg, columnNumber)
@@ -3354,6 +3422,10 @@ class MyMainWindow(QtGui.QMainWindow):
             datoTmp = self.quoteTableView.model().data(index).toPyObject()
             if pFindSpecialLinesMode == None:
                 #matchesList = re.findall(keyStr, datoTmp, flags=myReFlags)
+                #print "keyst, keySTrPatt, datoTmp", keyStr, keyStrCompiledPtrn ,datoTmp
+                #matchesList = None
+##                if datoTmp is None:
+##                    print "colnum, rowi, keyStr" , columnNumber, rowi, keyStr
                 matchesList = keyStrCompiledPtrn.findall(datoTmp)
                 if(matchesList) <> None and len(matchesList) > 0:
                     if pSearchMode <> "earlyScan":
