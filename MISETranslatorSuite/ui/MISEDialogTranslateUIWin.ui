@@ -793,6 +793,9 @@
     <addaction name="actionFind_Previous_Changed"/>
     <addaction name="separator"/>
     <addaction name="actionGotoLine"/>
+    <addaction name="separator"/>
+    <addaction name="actionReplace"/>
+    <addaction name="actionReplaceRegExp"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -963,6 +966,16 @@
    </property>
    <property name="text">
     <string>Moree.</string>
+   </property>
+  </action>
+  <action name="actionReplace">
+   <property name="text">
+    <string>Replace...</string>
+   </property>
+  </action>
+  <action name="actionReplaceRegExp">
+   <property name="text">
+    <string>Replace (with RegEx)...</string>
    </property>
   </action>
  </widget>

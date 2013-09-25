@@ -54,9 +54,9 @@ import json
 # DONE: Fixed: selection coloring is lost when losing focus (a stylesheet on the tableview defining the color fixed it!)
 # DONE: Replace should create a report of how many instances were replaced!
 # DONE: USE python regexps for highlighting instead of the QegExpr limited (non-optimal matches)
-# TODO: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
-# TODO: Bind Ctrl+H to replace (when it's implemented)
-# TODO: Bind Ctrl+Alt+H to replace with regex (when it's implemented)
+# DONE: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
+# DONE: Bind Ctrl+H to replace (when it's implemented)
+# DONE: Bind Ctrl+Shift+H to replace with regex (when it's implemented)
 
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
@@ -562,7 +562,7 @@ class MyMainWindow(QtGui.QMainWindow):
 ##        self.ui.LoadQuoteFileBtn.clicked.connect(self.loadQuoteFileinTable)
         self.ui.SubmitChangesBtn.clicked.connect(self.saveToLoadedQuoteFile)
         self.ui.FindInQuotesBtn.clicked.connect(self.findNextMatchFromClickedButton)
-        self.ui.cleanSearchBtn.clicked.connect(self.resetFindSearch)
+        self.ui.cleanSearchBtn.clicked.connect(self.resetFindReplaceSearch)
         self.ui.replaceInQuotesBtn.clicked.connect(self.replaceOnceMatchClickedButton)
         self.ui.replaceAllInQuotesBtn.clicked.connect(self.replaceAllMatchClickedButton)
         self.currentSearchKeyword = ""
@@ -581,7 +581,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.ui.searchModeRB.connect(self.ui.searchModeRB, QtCore.SIGNAL('toggled(bool)'), self.searchModeToggled)
         self.ui.replaceModeRB.connect(self.ui.replaceModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceModeToggled)
-        self.ui.replaceModeRB.connect(self.ui.replaceRegExModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceRegExModeToggled)
+        self.ui.replaceRegExModeRB.connect(self.ui.replaceRegExModeRB, QtCore.SIGNAL('toggled(bool)'), self.replaceRegExModeToggled)
         self.ui.actionShow_Highlighting.connect(self.ui.actionShow_Highlighting, QtCore.SIGNAL('toggled(bool)'), self.showHideDefaultHighlighing)
         self.ui.searchModeRB.toggle()
 
@@ -643,6 +643,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionFind.setShortcut('Ctrl+F')
         self.ui.actionFind_Next.triggered.connect(self.findNextMatchFromClickedButton)
         self.ui.actionFind_Next.setShortcut('F3')
+
+        self.ui.actionReplace.triggered.connect(self.focusOnReplaceFindBox)
+        self.ui.actionReplace.setShortcut('Ctrl+H')
+
+        self.ui.actionReplaceRegExp.triggered.connect(self.focusOnReplaceRegExpFindBox)
+        self.ui.actionReplaceRegExp.setShortcut('Ctrl+Shift+H')
 
         # TODO: Go To next marked (up, down) Ctrl+P. Ctrl_Shift_P
         self.ui.actionFind_Next_Marked.triggered.connect(self.findNextMarkedQuote)
@@ -762,6 +768,23 @@ class MyMainWindow(QtGui.QMainWindow):
     # serves the ctrl+f shortcut
     def focusOnFindBox(self):
         self.ui.findStrTxtBx.setFocus()
+        if(not self.ui.searchModeRB.isChecked()):
+            print "kakaka"
+            self.ui.searchModeRB.toggle()
+        return
+
+    # serves the ctrl+h shortcut
+    def focusOnReplaceFindBox(self):
+        self.ui.findStrTxtBx.setFocus()
+        if(not self.ui.replaceModeRB.isChecked()):
+            self.ui.replaceModeRB.toggle()
+        return
+
+    # serves the ctrl+shift+h shortcut
+    def focusOnReplaceRegExpFindBox(self):
+        self.ui.findStrTxtBx.setFocus()
+        if(not self.ui.replaceRegExModeRB.isChecked()):
+            self.ui.replaceRegExModeRB.toggle()
         return
 
     # about info box:
@@ -2967,9 +2990,14 @@ class MyMainWindow(QtGui.QMainWindow):
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
     #
     #   TODO Implementation of replace all.
-    #   TODO Implementation of replace with simple reg expressions. No groups!
     #   TODO Assess need of non-modal replace dialogue
-    #   TODO: when no model is loaded, Clicking on "Replace"button for text returns "no matches found", erases search key and keeps replace key??? Same when clicking on the magnifying glass on replace mode
+    #   TODO we could exploit the dictionary returned from the early scan to simplify replace and detection of full circle!
+    ##  DONE: Lost functionality of circle searching notification, if one replace was made!!
+    ##  DONE: when no model is loaded, Clicking on "Replace"button for text returns "no matches found", erases search key and keeps replace key??? Same when clicking on the magnifying glass on replace mode
+    ##  DONE: bug replace "comm" in fr.uitext with SEARCH_UPWARDS produces total matches overall "1" (there are much more!)
+    ##  DONE: bug replace the top-most appearance of a string (which should be found first so place the selection accordingly before presing replace), then search UPWARDS will never detected CIRCLE
+    ##           same bug is expected to occur in replacing the last appearance of a string (which should be found first so place the selection accordingly before presing replace), while searching DOWNWARDS!
+    ##  DONE Implementation of replace with simple reg expressions. No groups!
     ##  DONE Implementation of replace
     ##  DONE CRASH BUG: TypeError: expected string or buffer . at findall (3419), When opening a file and directly calling replace (click radio button, put a search string and replacement and click replace.
     ##  DONE automatically set the selected column to be the "translated text" when switching to Replace mode.
@@ -2985,6 +3013,7 @@ class MyMainWindow(QtGui.QMainWindow):
     ##  FIXED BUG: no-wrap. Replace mode. Press REPLACE for word that does not exist -> "End of file reached, continue"?". Either yes or no, we get "full circle" dlg. And either yes or no there exits. :/
     ##  DONE BUG: search for "uniq" in translation column --> total matches = 1 (but there are 2!)
     def replaceOnceMatchClickedButton(self, checked):
+
         ##print "replaceOnceMatch clicked"
         totalMatchesOverall = 0 # over whole column
         firstMatchingRow = -1 #init dummy value (for cycle detection)
@@ -3004,26 +3033,43 @@ class MyMainWindow(QtGui.QMainWindow):
             self.resetReplaceSearch()
             return
 
-        totalMatchesOverall = self.earlyScanOfEntireColumn()
+        totalMatchesOverall, rwoToResultsDict = self.earlyScanOfEntireColumn()
         if totalMatchesOverall == 0:
             reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             return
         self.replaceModeIsOngoing = True
         mySearchMode = "replaceFirst"
+        # get direction of search
+        searchDownwards = True
+        if self.ui.findSearchUpChBx.isChecked() == True:
+            searchDownwards = False
+        persistedWrapDone = False
+        persistedWrapBeforeResettingPreviousOne = False
         while(self.replaceModeIsOngoing):
             foundMatch = False
-            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = mySearchMode)
+            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat, wrapWasDone = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = mySearchMode)
+            print wrapWasDone
+            if wrapWasDone:
+                if (persistedWrapDone):
+                    persistedWrapBeforeResettingPreviousOne = True
+                persistedWrapDone = True
             if countMatches and numOfMatchesInCell > 0:
                 totalMatches += numOfMatchesInCell
             if firstMatchingRow == -1 and foundRowNum > -1:
                 mySearchMode = "replace" #after first match of first search, we set the mode to simple replace (to check from the next cell, not the current one).
                 firstMatchingRow = foundRowNum
-            elif errStat <> -3 and foundRowNum != -1 and foundRowNum == firstMatchingRow: #full circle search. Prompt for continue?
+                persistedWrapDone = False #if wrap was done before a match we should ignore it
+            elif errStat <> -3 and foundRowNum != -1 and \
+                    ((persistedWrapDone and ( ( foundRowNum >= firstMatchingRow and searchDownwards) or (foundRowNum <= firstMatchingRow and not searchDownwards) )) or \
+                    (persistedWrapBeforeResettingPreviousOne)) : #full circle search. Prompt for continue?
                 if countMatches:
                     totalMatches -= numOfMatchesInCell # reduct the added matches after cycle.
                 countMatches = False    # don't add to total after a circle has been reached
                 circleReply = msgBoxesStub.qMsgBoxQuestion(self.ui,  "Replace mode", "You reached the beginning of the search. Continue?")
                 if circleReply == QtGui.QMessageBox.Yes:
+                    persistedWrapDone = False
+                    persistedWrapBeforeResettingPreviousOne = False
+                    firstMatchingRow = foundRowNum
                     pass
                 else:
                     self.replaceModeIsOngoing = False
@@ -3059,8 +3105,12 @@ class MyMainWindow(QtGui.QMainWindow):
                     if match_caseFlg == False:
                         myReFlags |= re.IGNORECASE
                     myReFlags |= re.UNICODE #fixes ignorecase state for greek letters!
+                    myAdvRegExpReplaceFlag = False
+                    if(self.ui.replaceRegExModeRB.isChecked()):
+                        myAdvRegExpReplaceFlag = True
+
                     # to override the error when the re contains or ends in \
-                    compRegEx = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags)
+                    compRegEx = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags, myAdvRegExpReplaceFlag)
                     self.replaceAllInCell(foundRowNum, foundColNum, compRegEx, replacementStr)
 
                     # increase count
@@ -3145,6 +3195,12 @@ class MyMainWindow(QtGui.QMainWindow):
             patternStr = patternStr.replace('}',r'\}')
             patternStr = patternStr.replace('^',r'\^')
             patternStr = patternStr.replace('$',r'\$')
+        else:
+            # just don't allow groups
+            patternStr = patternStr.replace("\\", r"\\")
+            patternStr = patternStr.replace('(',r'\(')
+            patternStr = patternStr.replace(')',r'\)')
+
 
         retCompRegEx = re.compile(patternStr, regExpFlags)
         return retCompRegEx
@@ -3161,10 +3217,11 @@ class MyMainWindow(QtGui.QMainWindow):
 
 
     # CLEANUP FIND SEARCH HIGHLIGHT
-    def resetFindSearch(self):
+    def resetFindReplaceSearch(self):
         global listOfEnglishLinesSpeechInfo
         plithosOfQuotes =len(listOfEnglishLinesSpeechInfo)
         self.ui.findStrTxtBx.setText("")
+        self.ui.replaceWithStrTxtBx.setText("")
         highlightRulesGlobal.clearSearchRule()
         if(plithosOfQuotes>0):
             lm = self.quoteTableView.model()
@@ -3188,6 +3245,7 @@ class MyMainWindow(QtGui.QMainWindow):
     # Check entire column for matches with defined word.
     # Don't reset active selection, don't make a new selection
     def earlyScanOfEntireColumn(self):
+        resDict = dict()
         firstMatchingRow = -1
         countMatches = True
         earlyScanMode = True
@@ -3195,8 +3253,10 @@ class MyMainWindow(QtGui.QMainWindow):
         earlyScanLastRowFound = -1
         while(earlyScanMode):
             foundMatch = False
-            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=True, pMatchCase = None, pSearchMode = "earlyScan", pEarlyScanLastRowFound = earlyScanLastRowFound)
+            foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat, wrapWasDone  = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection="down", pWrapAround=False, pMatchCase = None, pSearchMode = "earlyScan", pEarlyScanLastRowFound = earlyScanLastRowFound)
             if countMatches and numOfMatchesInCell > 0:
+                if(resDict is not None and not resDict.has_key(foundRowNum)):
+                    resDict[foundRowNum] = numOfMatchesInCell
                 earlyScanLastRowFound = foundRowNum
                 totalMatches += numOfMatchesInCell
                 ##print "totalMatches: %d row: %d" % ( totalMatches, foundRowNum + 1)
@@ -3210,7 +3270,7 @@ class MyMainWindow(QtGui.QMainWindow):
                 earlyScanMode = False
             if foundMatch == False:
                 earlyScanMode = False
-        return totalMatches
+        return totalMatches, resDict
 
 
 
@@ -3223,7 +3283,7 @@ class MyMainWindow(QtGui.QMainWindow):
 #   pFindSpecialLinesMode = "marked", "changed", "unchanged", "conflicted"
 #   errstat : -1 (no search value), -2 (too few chars), -3 (replace mode, but not original text column selected), -4 no more matches
 #   pSearchMode can be "search", "replace" , "replaceFirst" , or "earlyScan"
-    def findNextMatchingStrLineInTable(self, pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "search", pEarlyScanLastRowFound = None ):
+    def findNextMatchingStrLineInTable(self, pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "search", pEarlyScanLastRowFound = None, pAdvRegExpMode = None ):
         global listOfEnglishLinesSpeechInfo
         global listOfUntranslatedLinesSpeechInfo
         retNumOfMatchesInCell = 0
@@ -3234,6 +3294,7 @@ class MyMainWindow(QtGui.QMainWindow):
         search_direction = "down"
         search_wrap = True
         match_case = False
+        wrapWasDone = False
         if pSearchDirection <> None:
             search_direction = pSearchDirection
         elif self.ui.findSearchUpChBx.isChecked() == True:
@@ -3246,6 +3307,12 @@ class MyMainWindow(QtGui.QMainWindow):
             match_case = pMatchCase
         elif self.ui.findMatchCaseChBx.isChecked()== True:
             match_case = True
+
+        myAdvRegExpReplaceFlag = False
+        if pAdvRegExpMode <> None:
+            myAdvRegExpReplaceFlag = pAdvRegExpMode
+        elif(self.ui.replaceRegExModeRB.isChecked()):
+            myAdvRegExpReplaceFlag = True
 
         if pFindSpecialLinesMode == None:
             if self.currentSearchKeyword == self.ui.findStrTxtBx.text().strip():
@@ -3265,15 +3332,15 @@ class MyMainWindow(QtGui.QMainWindow):
             keySearchStr = self.ui.findStrTxtBx.text().strip()
             #print "keySearchStr"+ keySearchStr
             if keySearchStr == "" or plithosOfQuotes==0:
-                self.resetFindSearch()
+                self.resetFindReplaceSearch()
                 errstat = -1
-                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat
+                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat, wrapWasDone
 
             if len(keySearchStr) < 2:
                 if pSearchMode <> "earlyScan":
                     reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "Cannot allow string search with less than 2 characters!")
                 errstat = -2
-                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat
+                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat, wrapWasDone
 
             # after validity checks, we set the member var to remember the last valid search
             self.currentSearchKeyword = keySearchStr
@@ -3282,7 +3349,7 @@ class MyMainWindow(QtGui.QMainWindow):
                  searchInColumnNumber = 1
             if (pSearchMode == "replace" or pSearchMode == "replaceFirst") and searchInColumnNumber != 1:
                 errstat = -3
-                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat
+                return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat, wrapWasDone
 
         elif pFindSpecialLinesMode == "marked":
             searchInColumnNumber = 2
@@ -3319,8 +3386,10 @@ class MyMainWindow(QtGui.QMainWindow):
                 startRowOfSearch = 0
 
         if (startRowOfSearch >= plithosOfQuotes and search_direction == "down" and search_wrap == True):
+            wrapWasDone = True
             startRowOfSearch = 0
         elif (startRowOfSearch < 0 and search_direction == "up" and search_wrap == True):
+            wrapWasDone = True
             startRowOfSearch = plithosOfQuotes - 1
 
 ##        for rowi in range(startRowOfSearch,plithosOfQuotes):
@@ -3336,10 +3405,11 @@ class MyMainWindow(QtGui.QMainWindow):
         if  search_direction == "up":
             untilButWithoutRow = -1
 
-        weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, startRowOfSearch, untilButWithoutRow, searchInColumnNumber,search_direction, match_case, pSearchMode)
+        weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, startRowOfSearch, untilButWithoutRow, searchInColumnNumber,search_direction, match_case, pSearchMode, myAdvRegExpReplaceFlag)
         if weHadAMatch == False: #search from startRow to the end (or the top) and found nothing. Check if wrapping is set to continue searching)
             if search_wrap == True  and ( (search_direction == "down"  and startRowOfSearch > 0  ) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1 ) ):
-                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
+                wrapWasDone = True
+                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode, myAdvRegExpReplaceFlag)
         # if still is false then print message!
         if search_wrap == True and weHadAMatch == False:
             if pSearchMode <> "earlyScan":
@@ -3356,19 +3426,20 @@ class MyMainWindow(QtGui.QMainWindow):
         elif pSearchMode <> "earlyScan" and search_wrap == False and weHadAMatch == False and ( (search_direction == "down" and startRowOfSearch > 0) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1) ) :
             reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Information message", "End of file reached. No matches were found! Do you want to continue search from the beginning of the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
             if reply == QtGui.QMessageBox.Yes:
-                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode)
+                wrapWasDone = True
+                weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode, myAdvRegExpReplaceFlag)
                 if weHadAMatch == False:
                     reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
                     errstat = -4
             else:
                 errstat = -4
 
-        return weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum, errstat
+        return weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum, errstat, wrapWasDone
 
 #   Internal method for matching keywords, used by the find (findNextMatchingStrLineInTable) method.
 #
 #
-    def matchKeyWord(self, pFindSpecialLinesMode, keyStr, fromRow, untilButWithoutRow, columnNumber, search_direction, match_caseFlg, pSearchMode = "search"):
+    def matchKeyWord(self, pFindSpecialLinesMode, keyStr, fromRow, untilButWithoutRow, columnNumber, search_direction, match_caseFlg, pSearchMode = "search", pAdvRegExpMode = False):
         #print keyStr
         #print pFindSpecialLinesMode == None
         #print search_direction
@@ -3390,7 +3461,7 @@ class MyMainWindow(QtGui.QMainWindow):
             if columnNumber > 0:
                 myReFlags |= re.UNICODE #fixes ignorecase state for greek letters!
             # to override the error when the re contains or ends in \
-            keyStrCompiledPtrn = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags)
+            keyStrCompiledPtrn = self.produceCompiledRegExForSearchReplace(keyStr, myReFlags, pAdvRegExpMode)
 
 ##            #keyStr = keyStr.replace('\\','\\\\')
 ##            keyStr = keyStr.replace("\\", r"\\")
@@ -3843,6 +3914,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
         self.ui.actionFind_Next_Changed.setEnabled(pFlagEnable)
         self.ui.actionFind_Previous_Changed.setEnabled(pFlagEnable)
+        self.ui.actionReplace.setEnabled(pFlagEnable)
+        self.ui.actionReplaceRegExp.setEnabled(pFlagEnable)
+
 #        self.ui.setActiveWindow()
         self.ui.setFocus()
         self.ui.activateWindow()
