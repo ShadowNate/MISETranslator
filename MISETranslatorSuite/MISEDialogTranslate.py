@@ -2989,9 +2989,11 @@ class MyMainWindow(QtGui.QMainWindow):
     #    REPLACE ALL replaces all instances without prompting anymore. At the end (no more matches) presents a report ----> END
     # c. if YES or NO, the search continues. If no match is found. present the report. ---> END
     #
-    #   TODO Implementation of replace all.
     #   TODO Assess need of non-modal replace dialogue
     #   TODO we could exploit the dictionary returned from the early scan to simplify replace and detection of full circle!
+    ##  DONE Implementation of replace all.
+    ##  TESTED what happens with NO search_wrap and replace_all
+    ##   DONE replace_all should not show the dialogue boxes for no matches found. --> another mode?
     ##  DONE: Lost functionality of circle searching notification, if one replace was made!!
     ##  DONE: when no model is loaded, Clicking on "Replace"button for text returns "no matches found", erases search key and keeps replace key??? Same when clicking on the magnifying glass on replace mode
     ##  DONE: bug replace "comm" in fr.uitext with SEARCH_UPWARDS produces total matches overall "1" (there are much more!)
@@ -3013,7 +3015,10 @@ class MyMainWindow(QtGui.QMainWindow):
     ##  FIXED BUG: no-wrap. Replace mode. Press REPLACE for word that does not exist -> "End of file reached, continue"?". Either yes or no, we get "full circle" dlg. And either yes or no there exits. :/
     ##  DONE BUG: search for "uniq" in translation column --> total matches = 1 (but there are 2!)
     def replaceOnceMatchClickedButton(self, checked):
+        self.replaceMatches(False)
 
+
+    def replaceMatches(self, pReplaceAllMode = False):
         ##print "replaceOnceMatch clicked"
         totalMatchesOverall = 0 # over whole column
         firstMatchingRow = -1 #init dummy value (for cycle detection)
@@ -3023,6 +3028,7 @@ class MyMainWindow(QtGui.QMainWindow):
         searchInColumnNumber = -1
         # auto -set to translated text
         self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
+        replaceAllMode = pReplaceAllMode
 
         # moved early column detection here:
         if self.ui.OriginalOrTransCmbBx.currentText() <> "Original Text":
@@ -3037,6 +3043,15 @@ class MyMainWindow(QtGui.QMainWindow):
         if totalMatchesOverall == 0:
             reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             return
+
+        if replaceAllMode:
+            reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Replace All Confirmation", "Are you sure you want to replace all %d instances?\nThis action cannot be undone." % (totalMatchesOverall,))
+            if reply == QMessageBox.No:
+                self.replaceModeIsOngoing = False
+                self.resetReplaceSearch()
+                #print "abort replace all"
+                return
+
         self.replaceModeIsOngoing = True
         mySearchMode = "replaceFirst"
         # get direction of search
@@ -3048,7 +3063,7 @@ class MyMainWindow(QtGui.QMainWindow):
         while(self.replaceModeIsOngoing):
             foundMatch = False
             foundMatch, numOfMatchesInCell, foundColNum, foundRowNum, errStat, wrapWasDone = self.findNextMatchingStrLineInTable(pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = mySearchMode)
-            print wrapWasDone
+            ##print wrapWasDone
             if wrapWasDone:
                 if (persistedWrapDone):
                     persistedWrapBeforeResettingPreviousOne = True
@@ -3057,6 +3072,8 @@ class MyMainWindow(QtGui.QMainWindow):
                 totalMatches += numOfMatchesInCell
             if firstMatchingRow == -1 and foundRowNum > -1:
                 mySearchMode = "replace" #after first match of first search, we set the mode to simple replace (to check from the next cell, not the current one).
+                if replaceAllMode:
+                    mySearchMode = "replaceAll"
                 firstMatchingRow = foundRowNum
                 persistedWrapDone = False #if wrap was done before a match we should ignore it
             elif errStat <> -3 and foundRowNum != -1 and \
@@ -3065,13 +3082,19 @@ class MyMainWindow(QtGui.QMainWindow):
                 if countMatches:
                     totalMatches -= numOfMatchesInCell # reduct the added matches after cycle.
                 countMatches = False    # don't add to total after a circle has been reached
-                circleReply = msgBoxesStub.qMsgBoxQuestion(self.ui,  "Replace mode", "You reached the beginning of the search. Continue?")
-                if circleReply == QtGui.QMessageBox.Yes:
-                    persistedWrapDone = False
-                    persistedWrapBeforeResettingPreviousOne = False
-                    firstMatchingRow = foundRowNum
-                    pass
-                else:
+                goAheadAndEnd = False
+                if not replaceAllMode:
+                    circleReply = msgBoxesStub.qMsgBoxQuestion(self.ui,  "Replace mode", "You reached the beginning of the search. Continue?")
+                    if circleReply == QtGui.QMessageBox.Yes:
+                        persistedWrapDone = False
+                        persistedWrapBeforeResettingPreviousOne = False
+                        firstMatchingRow = foundRowNum
+                        pass
+                    else:
+                        goAheadAndEnd = True
+                else: # replace all mode ends after circle
+                    goAheadAndEnd = True
+                if goAheadAndEnd:
                     self.replaceModeIsOngoing = False
                     self.resetReplaceSearch()
                     # TODO: show report if any replaces were made!
@@ -3085,16 +3108,51 @@ class MyMainWindow(QtGui.QMainWindow):
                 # no need for report. but we DO NEED TO clear up the replace highlighting!
             elif foundMatch:
                 # break if no matches, or explicitly select stop from dialogue.
-                msgBox = QMessageBox(self.ui)
-                msgBox.setWindowTitle ("Replace Matching Instance(s)...")
-                msgBox.setText("Do you want to replace the %d instance(s) found in this cell (row %d)?\nNote that a cell might have more than one matching instances.\nALL the matching instances in the selected cell WILL be replaced.\nSome or all of the instances may be hidden if the cell contains a large text!" % (numOfMatchesInCell,foundRowNum+1))
-                yesReplaceButton = msgBox.addButton(self.tr("Replace"), QMessageBox.YesRole)
-                noReplaceButton = msgBox.addButton(self.tr("Skip"), QMessageBox.NoRole)
-                stopButton = msgBox.addButton(QMessageBox.Cancel)
-                replaceAllButton = msgBox.addButton(self.tr("Replace All"), QMessageBox.YesRole)
-                msgBox.setDefaultButton(yesReplaceButton)
-                reply = msgBox.exec_()
-                if msgBox.clickedButton() == yesReplaceButton:
+                goAheadReplace = False
+                if not replaceAllMode:
+                    msgBox = QMessageBox(self.ui)
+                    msgBox.setWindowTitle ("Replace Matching Instance(s)...")
+                    msgBox.setText("Do you want to replace the %d instance(s) found in this cell (row %d)?\nNote that a cell might have more than one matching instances.\nALL the matching instances in the selected cell WILL be replaced.\nSome or all of the instances may be hidden if the cell contains a large text!" % (numOfMatchesInCell,foundRowNum+1))
+                    yesReplaceButton = msgBox.addButton(self.tr("Replace"), QMessageBox.YesRole)
+                    noReplaceButton = msgBox.addButton(self.tr("Skip"), QMessageBox.NoRole)
+                    stopButton = msgBox.addButton(QMessageBox.Cancel)
+                    replaceAllButton = msgBox.addButton(self.tr("Replace All"), QMessageBox.YesRole)
+                    msgBox.setDefaultButton(yesReplaceButton)
+                    reply = msgBox.exec_()
+                    if msgBox.clickedButton() == yesReplaceButton:
+                        goAheadReplace = True
+                    elif msgBox.clickedButton() == noReplaceButton:
+                        # skip
+                        #print "Skip replace"
+                        pass
+                    elif msgBox.clickedButton() == stopButton: #also catches click on the [X] of dialogue
+                        # Stop
+                        #print "Stop replace"
+                        self.replaceModeIsOngoing = False
+                        self.resetReplaceSearch()
+                        # TODO: show report if any replaces were made!
+                        if(totalReplaces > 0):
+                            self.showReplaceReportLog(totalMatchesOverall, totalMatches, totalReplaces)
+                    elif msgBox.clickedButton() == replaceAllButton:
+                        # "Replace All"
+                        #print "Replace all"
+                        replaceAllMode = True
+                        mySearchMode = "replaceAll"
+                        goAheadReplace = True
+                        #
+                        #self.replaceModeIsOngoing = False
+                        #self.resetReplaceSearch()
+                        #if(totalReplaces > 0):
+                        #    self.showReplaceReportLog(totalMatchesOverall, totalMatches, totalReplaces)
+                        #pass
+                    else:
+                        #print "something else happened"
+                        self.replaceModeIsOngoing = False
+                        self.resetReplaceSearch()
+                else:
+                    goAheadReplace = True
+                ##
+                if goAheadReplace:
                     # replace
                     keyStr = self.ui.findStrTxtBx.text().strip()
                     match_caseFlg = False
@@ -3117,30 +3175,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     totalReplaces += numOfMatchesInCell
                     #print "Replace and continue"
                     pass
-                elif msgBox.clickedButton() == noReplaceButton:
-                    # skip
-                    #print "Skip replace"
-                    pass
-                elif msgBox.clickedButton() == stopButton: #also catches click on the [X] of dialogue
-                    # Stop
-                    #print "Stop replace"
-                    self.replaceModeIsOngoing = False
-                    self.resetReplaceSearch()
-                    # TODO: show report if any replaces were made!
-                    if(totalReplaces > 0):
-                        self.showReplaceReportLog(totalMatchesOverall, totalMatches, totalReplaces)
-                elif msgBox.clickedButton() == replaceAllButton:
-                    # "Replace All"
-                    print "Replace all"
-                    self.replaceModeIsOngoing = False
-                    self.resetReplaceSearch()
-                    if(totalReplaces > 0):
-                        self.showReplaceReportLog(totalMatchesOverall, totalMatches, totalReplaces)
-                    pass
-                else:
-                    #print "something else happened"
-                    self.replaceModeIsOngoing = False
-                    self.resetReplaceSearch()
+
                 #print "reply: ", reply
             else:
                 #print "SET FALSE"
@@ -3153,18 +3188,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
     def replaceAllMatchClickedButton(self, checked):
         ##print "replaceAllMatch clicked"
-        # auto -set to translated text
-        self.ui.OriginalOrTransCmbBx.setCurrentIndex(1)
-
-        self.replaceModeIsOngoing = True
-        reply = msgBoxesStub.qMsgBoxQuestion(self.ui, "Replace All Confirmation", "Are you sure you want to replace all instances?\nThis action cannot be undone.")
-        if reply == QMessageBox.Yes:
-            print "go ahead replace all"
-            pass
-        else:
-            self.replaceModeIsOngoing = False
-            print "abort replace all"
-            pass
+        self.replaceMatches(True)
         return
 
     # count is assumed 0 (all should be replaced) and compiledPattern should include the flags)
@@ -3282,7 +3306,7 @@ class MyMainWindow(QtGui.QMainWindow):
 #   Internal function for searching for matching strings (inline find)
 #   pFindSpecialLinesMode = "marked", "changed", "unchanged", "conflicted"
 #   errstat : -1 (no search value), -2 (too few chars), -3 (replace mode, but not original text column selected), -4 no more matches
-#   pSearchMode can be "search", "replace" , "replaceFirst" , or "earlyScan"
+#   pSearchMode can be "search", "replace" , "replaceAll", "replaceFirst" , or "earlyScan"
     def findNextMatchingStrLineInTable(self, pFindSpecialLinesMode=None, pSearchDirection=None, pWrapAround=None, pMatchCase = None, pSearchMode = "search", pEarlyScanLastRowFound = None, pAdvRegExpMode = None ):
         global listOfEnglishLinesSpeechInfo
         global listOfUntranslatedLinesSpeechInfo
@@ -3303,6 +3327,9 @@ class MyMainWindow(QtGui.QMainWindow):
             search_wrap = pWrapAround
         elif self.ui.findWrapAroundChBx.isChecked()== False:
             search_wrap = False
+        if pSearchMode == "replaceAll": #special override case
+            search_wrap = True
+
         if pMatchCase <> None:
             match_case = pMatchCase
         elif self.ui.findMatchCaseChBx.isChecked()== True:
@@ -3347,7 +3374,7 @@ class MyMainWindow(QtGui.QMainWindow):
 
             if self.ui.OriginalOrTransCmbBx.currentText() <> "Original Text":
                  searchInColumnNumber = 1
-            if (pSearchMode == "replace" or pSearchMode == "replaceFirst") and searchInColumnNumber != 1:
+            if (pSearchMode == "replace" or pSearchMode == "replaceFirst" or pSearchMode == "replaceAll") and searchInColumnNumber != 1:
                 errstat = -3
                 return False, retNumOfMatchesInCell, retColNum, retRowNum, errstat, wrapWasDone
 
@@ -3361,7 +3388,7 @@ class MyMainWindow(QtGui.QMainWindow):
             searchInColumnNumber = 3
 
         startRowOfSearch = 0
-        if pSearchMode == "search" or pSearchMode == "replace" or (pSearchMode == "earlyScan" and pEarlyScanLastRowFound is None ):
+        if pSearchMode == "search" or pSearchMode == "replace" or pSearchMode == "replaceAll" or (pSearchMode == "earlyScan" and pEarlyScanLastRowFound is None ):
             startRowOfSearchIndex = self.quoteTableView.currentIndex()
             if (search_mode == "next" or search_mode == "start") and search_direction == "down":
                 if (startRowOfSearchIndex is not None) :
@@ -3412,15 +3439,15 @@ class MyMainWindow(QtGui.QMainWindow):
                 weHadAMatch, retNumOfMatchesInCell, retColNum, retRowNum  = self.matchKeyWord(pFindSpecialLinesMode, keySearchStr, wrap_start, startRowOfSearch, searchInColumnNumber, search_direction, match_case, pSearchMode, myAdvRegExpReplaceFlag)
         # if still is false then print message!
         if search_wrap == True and weHadAMatch == False:
-            if pSearchMode <> "earlyScan":
+            if pSearchMode <> "earlyScan" and pSearchMode <> "replaceAll":
                 reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             errstat = -4
         elif search_wrap == False and weHadAMatch == False and search_direction == "up" and startRowOfSearch == plithosOfQuotes -1:
-            if pSearchMode <> "earlyScan":
+            if pSearchMode <> "earlyScan" and pSearchMode <> "replaceAll":
                 reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             errstat = -4
         elif search_wrap == False and weHadAMatch == False and search_direction == "down" and startRowOfSearch == 0:
-            if pSearchMode <> "earlyScan":
+            if pSearchMode <> "earlyScan" and pSearchMode <> "replaceAll":
                 reply = msgBoxesStub.qMsgBoxInformation(self.ui,  "Information message", "No matches were found!")
             errstat = -4
         elif pSearchMode <> "earlyScan" and search_wrap == False and weHadAMatch == False and ( (search_direction == "down" and startRowOfSearch > 0) or (search_direction == "up" and startRowOfSearch < plithosOfQuotes -1) ) :
@@ -3508,7 +3535,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retRowNum = index.row()
                     ##print "Match. Row: ", index.row()
                     retBool = True
-                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst" or pSearchMode == "replaceAll"):
                         #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                         highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
@@ -3523,7 +3550,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retColNum = indexToSelect.column()
                     retRowNum = indexToSelect.row()
                     retBool = True
-                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"):  #does it even have any meaning in special cells?
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst" or pSearchMode == "replaceAll"):  #does it even have any meaning in special cells?
                         #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                         highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
@@ -3538,7 +3565,7 @@ class MyMainWindow(QtGui.QMainWindow):
                     retColNum = indexToSelect.column()
                     retRowNum = indexToSelect.row()
                     retBool = True
-                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst"): #does it even have any meaning in special cells?
+                    if (pSearchMode == "replace" or pSearchMode == "replaceFirst" or pSearchMode == "replaceAll"): #does it even have any meaning in special cells?
                         #highlightRulesGlobal.setReplaceHighlightRule(keyStr, replaceKeyFormat, match_caseFlg, retColNum, retRowNum)
                         highlightRulesGlobal.setReplaceHighlightRule(keyStrCompiledPtrn, replaceKeyFormat, retColNum, retRowNum)
                     break
