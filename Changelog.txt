@@ -1,3 +1,32 @@
+v4.95
+--------
+- Subclassed QTableView and implemented new delegates for columns 0 and 1. Support for highlighting, Hints for large hidden texts.
+- Added extra highlight rules. 
+- Make extra highlighting optional
+- Fixed searching with case insensitive for Greek letters (column 1 UNICODE flag set)
+- Bugfix: Searching for greek is always case sensitive
+- Remember (persist) the width of columns of last session before closing app --> no connection with files. Just the last session.
+- Remember (persist) screen selection in multi-monitor setups. Tested in virtual desktop setting.
+- Selection colouring is not lost on losing focus from the tableview. 
+- WONTDO: Remember screen resolution. Keep connection with FILE MD5? 
+- Clean DB trampol.sql file was updated to a version with the jsonsettings column
+- Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
+- WONTDO Task: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too. --> WON'T DO. They are dialogues (now repaker is a dialogue too, and they will nest with the parent app).
+- Bugfix: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
+       |-   "FIXED", the search keyword overrides the others (it seems to work, at least in practice, since it is checked later than the default highlight rules)
+- Fixed: Cropping in narrow columns (width is taken now into account too)
+        PAINT BUG: line 333 of fr.speech.info: When columns are narrow, then the text (which has no spaces overlaps in the next column!!!)
+        Why is 333 a special case and 310 is not? It is related to the alternate row painting. The alternates (grey) behave better (hide text), the normal do not!
+- Fixed: selection colouring is lost when losing focus (a stylesheet on the tableview defining the color fixed it!)
+- Use python regexps for highlighting instead of the QRegExpr which were limited (non-optimal matches)
+- "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. 
+	"Find" does not do that (does not have to).
+- "Replace all" functionality
+- Replace should create a report of how many instances were replaced.
+- Bind Ctrl+H to replace
+- Bind Ctrl+Shift+H to replace with regular expressions (no groups in regEx though) 
+
+
 v4.92
 --------
 - Re-assign the show report dialogue to Ctrl+R
