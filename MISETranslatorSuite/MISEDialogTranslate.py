@@ -36,28 +36,6 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
-
-# DONE: make extra highlighting optional
-# DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
-# DONE: (4.95 fixed) Bug: Searching for greek is always case sensitive
-# DONE: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5? --> no connection with files. Just the last session.
-# DONE: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
-# DONE: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
-# DONE: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too. --> WON'T DO. They are dialogues (now repaker is a dialogue too, and they will nest with the parent app).
-# DONE: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
-#       |-   "FIXED", the search keyword overrides the others (it seems at least in practice)
-
-# DONE: FIXED CROPPING IN NARROW COLUMNS (width is taken now into account too)
-        # PAINT BUG: line 333 of fr.speech.info. When columns are narrow, then the text (which has no spaces overlaps in the next column!!!)
-        # WHY IS 333 a special case and 310 is not?
-        # It is related to the alternate row painting. The alternates (grey) behave better (hide text), the normal do not!
-# DONE: Fixed: selection coloring is lost when losing focus (a stylesheet on the tableview defining the color fixed it!)
-# DONE: Replace should create a report of how many instances were replaced!
-# DONE: USE python regexps for highlighting instead of the QegExpr limited (non-optimal matches)
-# DONE: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
-# DONE: Bind Ctrl+H to replace (when it's implemented)
-# DONE: Bind Ctrl+Shift+H to replace with regex (when it's implemented)
-
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
@@ -111,6 +89,30 @@ import json
 
 # TODO: Autosave feature?
 # TODO: Note about the SoMI bugs that were "fixed" by changing the classic version (and a how-to). This could be integrated in the interface also (produce the text required in the classic version for the bug cases (lens, The Sea Monkey, 173 piece of eight or sth)
+
+
+#v 4.95
+### DONE: make extra highlighting optional
+### DONE: Fixed searching with case insensitive for greek letters (column 1 UNICODE flag set)
+### DONE: (4.95 fixed) Bug: Searching for greek is always case sensitive
+### DONE: Remember the width of columns of last session before closing app. Remember screen resolution. Keep connection with FILE MD5? --> no connection with files. Just the last session.
+### DONE: Clean DB trampol.sql file should be updated to a version with the jsonsettings column
+### DONE: Store in DB, the preference for viewing (toggle setting) the highlighted text (standard keywords). And Restore it on start.
+### DONE: if screen selection works, it should also be integrated to the other tools (repaker, font mod tool) too. --> WON'T DO. They are dialogues (now repaker is a dialogue too, and they will nest with the parent app).
+### DONE: if search for a keyword that exists in the "pre-existing" highlight rules, then one of the two supercedes the other! (so we should just keep the highlighting of the search word.
+###       |-   "FIXED", the search keyword overrides the others (it seems at least in practice)
+##
+### DONE: FIXED CROPPING IN NARROW COLUMNS (width is taken now into account too)
+##        # PAINT BUG: line 333 of fr.speech.info. When columns are narrow, then the text (which has no spaces overlaps in the next column!!!)
+##        # WHY IS 333 a special case and 310 is not?
+##        # It is related to the alternate row painting. The alternates (grey) behave better (hide text), the normal do not!
+### DONE: Fixed: selection coloring is lost when losing focus (a stylesheet on the tableview defining the color fixed it!)
+### DONE: Replace should create a report of how many instances were replaced!
+### DONE: USE python regexps for highlighting instead of the QegExpr limited (non-optimal matches)
+### DONE: "Replace" functionality. Replace should take into account that a word can be found more than once in the same quote. "Find" does not do that.
+### DONE: Bind Ctrl+H to replace (when it's implemented)
+### DONE: Bind Ctrl+Shift+H to replace with regex (when it's implemented)
+
 
 #v 4.92
 ## Re-assign the show report dialogue to Ctrl+R
