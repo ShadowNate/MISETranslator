@@ -10,6 +10,7 @@ from struct import *
 import time
 import re
 import hashlib
+import enchant
 import sqlite3
 from math import trunc
 
@@ -402,6 +403,7 @@ class MyMainWindow(QtGui.QMainWindow):
     relPath = u'.'
     DBFileName = u'trampol.sqlite'
     uiFolderName = u'ui'
+    dictionariesFolderName = u'dictionaries'
     uiFileName = u'MISEDialogTranslateUIWin.ui'
     uiFontsToolFileName = u'MISEFontsTranslateUIDlg.ui'
     uiRepackerToolFileName = u'MISERepackUIDlg.ui'
@@ -448,9 +450,15 @@ class MyMainWindow(QtGui.QMainWindow):
         self.jSettingsInMemDict = dict()
         self.ignoreQuoteTableResizeEventFlg = False
         if getattr(sys, 'frozen', None):
-            self.basedir = sys._MEIPASS
+            self.basedir = sys._MEIPASS     #has to do with the temp folder when launching one-file pyinstaller produced exe
         else:
             self.basedir = os.path.dirname(__file__)
+
+        print enchant.list_languages()
+        enchant.set_param("enchant.myspell.dictionary.path",os.path.join(self.relPath,self.dictionariesFolderName))
+        print enchant.get_param("enchant.myspell.dictionary.path")
+        print enchant.list_languages()
+        # http://stackoverflow.com/questions/8753973/pyqt-qmenu-dropdown-direction
 
         self.DBFileNameAndRelPath = os.path.join(self.relPath,self.DBFileName)
         #print self.DBFileNameAndRelPath

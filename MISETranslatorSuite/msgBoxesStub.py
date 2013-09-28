@@ -1,7 +1,6 @@
-#-------------------------------------------------------------------------------
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
-#-------------------------------------------------------------------------------
-#!/usr/bin/env python
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *

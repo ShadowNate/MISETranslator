@@ -1,4 +1,6 @@
-﻿#-------------------------------------------------------------------------------
+﻿#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+#-------------------------------------------------------------------------------
 # Name:        keeps highlight rules centrally
 #               keeps and notifies a list of "watcher" highlighters (calls their re-highlight)
 # TODO: maybe make it a singleton ?
