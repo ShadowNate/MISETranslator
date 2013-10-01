@@ -15,6 +15,8 @@ import highlightRulesGlobal
 class TextDocDelegate(QStyledItemDelegate):
     font = QtGui.QFont()
     moreFont = QtGui.QFont()
+
+
     def __init__(self):
         super(TextDocDelegate, self).__init__()
         self.font = QtGui.QFont()
@@ -26,6 +28,7 @@ class TextDocDelegate(QStyledItemDelegate):
         self.moreFont.setFixedPitch(True)
         self.moreFont.setPointSize(8)
         self.moreFont.setWeight(QFont.Bold)
+        self.installEventFilter(self)
 
     # override displayText, since otherwise we get duplicates with Paint-ed QTextDocument (which we need for the highlighting)
     def displayText(self, value, locale):
@@ -188,6 +191,29 @@ class TextDocDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
         return
 
+    def eventFilter(self, editor, event):
+        if event.type() == QEvent.KeyPress:
+            #print "key: ", event.key(), " mod: ", event.modifiers(), " keyEnter: ", Qt.Key_Enter
+            #print Qt.Key_Enter == event.key() , (event.modifiers() & QtCore.Qt.ShiftModifier == QtCore.Qt.ShiftModifier), ((event.key() == Qt.Key_Return) or (event.key() == Qt.Key_Enter) )
+            #keyEvent = (QKeyEvent)(event);
+            if (event.modifiers() & QtCore.Qt.ShiftModifier == QtCore.Qt.ShiftModifier) and \
+                            (event.modifiers() & QtCore.Qt.ControlModifier == QtCore.Qt.ControlModifier) and \
+                             ((event.key() == Qt.Key_Return) or (event.key() == Qt.Key_Enter) ):
+                self.emit(SIGNAL("commitData(QWidget *)"), editor)
+                self.emit(SIGNAL("closeEditor(QWidget *, QAbstractItemDelegate::EndEditHint)"), editor, QStyledItemDelegate.NoHint)
+                self.emit(SIGNAL("customMoveEditCursor(int)"), 0) # we use this, instead of the core signal (closeEditor with EditPreviousItem  hint) because that one also moved the focus to another column.
+                return True # handled
+            elif (event.modifiers() & QtCore.Qt.ShiftModifier == QtCore.Qt.ShiftModifier) and ((event.key() == Qt.Key_Return) or (event.key() == Qt.Key_Enter) ):
+                self.emit(SIGNAL("commitData(QWidget *)"), editor)
+                self.emit(SIGNAL("closeEditor(QWidget *, QAbstractItemDelegate::EndEditHint)"), editor, QStyledItemDelegate.NoHint)
+                self.emit(SIGNAL("customMoveEditCursor(int)"), 1) # we use this, instead of the core signal (closeEditor with EditNextItem hint) because that one also moved the focus to another column.
+                return True # handled
+        return QStyledItemDelegate.eventFilter(self, editor, event)
+
+    def muteCloseEditorSignal(self, editor, qEditHint):
+        if qEditHint == QStyledItemDelegate.EditPreviousItem or qEditHint == QStyledItemDelegate.EditNextItem:
+            print "akakaka"
+            return
 
 class HighlightingRule:
     pass

@@ -1791,6 +1791,7 @@ class MyMainWindow(QtGui.QMainWindow):
 ##                    __tmpItem.setEnabled(False)
 ##                lm.setItem(rowi,columni,__tmpItem)
         lm.connect(lm, QtCore.SIGNAL('itemChanged( QStandardItem *)'),  self.handleChangedItem)
+        QtCore.QObject.connect(self.custTextDocDelegate, QtCore.SIGNAL("customMoveEditCursor(int)"),  self.myhandleGotoEditNextItem)
 
 
        # QtCore.QObject.connect(lm, QtCore.SIGNAL("itemChanged(const QModelIndex)"), self.handleChangedItem)
@@ -1800,6 +1801,34 @@ class MyMainWindow(QtGui.QMainWindow):
         self.restoreSessionSavedColumSizes() # this will do something only if something was saved from a last session.
         self.statusLoadingAFile = False
 
+    #
+    #
+    #
+    def myhandleGotoEditNextItem(self, qEditHint):
+        lm = self.quoteTableView.model()
+        indexRow = 0
+        indexCol = 1
+
+        if lm is not None:
+            index = self.quoteTableView.currentIndex()
+            indexRow = index.row()
+            indexCol = index.column()
+            if qEditHint == 1:
+                #print "row: ", indexRow, " col: ",indexCol  # column is shifted to the next (probably due to the EditNextItem signal). So we need to subtract one from the column. To be safe we could set it explicitly to 1, since only that column should be editable. For now leave it with subtract.
+                lmRows = lm.rowCount()
+                if ((indexRow+1) < lmRows):
+                    newIndex = lm.index(indexRow+1, indexCol, QModelIndex())
+                self.quoteTableView.setCurrentIndex(newIndex)
+                self.quoteTableView.setFocus()
+                self.quoteTableView.edit(newIndex)
+            elif qEditHint == 0:
+                #print "row: ", indexRow, " col: ", indexCol
+                if ((indexRow) > 0):
+                    newIndex = lm.index(indexRow-1, indexCol, QModelIndex())
+                    self.quoteTableView.setCurrentIndex(newIndex)
+                    self.quoteTableView.setFocus()
+                    self.quoteTableView.edit(newIndex)
+        return
 
 
 #   Saves the edited quotes to a copy file
