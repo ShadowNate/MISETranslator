@@ -687,6 +687,16 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionFind_Previous_Unchanged.triggered.connect(self.findPrevUnchangedQuote)
         self.ui.actionFind_Previous_Unchanged.setShortcut('Ctrl+Shift+U')
 
+        #spell checker
+        self.ui.actionGo_to_previous_error.triggered.connect(self.spellCheckTranslation)
+        self.ui.actionCheck_translation.setShortcut('Alt+A')
+
+        self.ui.actionGo_to_previous_error.triggered.connect(self.findNextSpellingErrorQuote)
+        self.ui.actionGo_to_next_error.setShortcut('Alt+N')
+
+        self.ui.actionGo_to_previous_error.triggered.connect(self.findPrevSpellingErrorQuote)
+        self.ui.actionGo_to_previous_error.setShortcut('Alt+B')
+
         self.ui.actionAbout.triggered.connect(self.showAbout)
 
         self.ui.backupBtn.clicked.connect(self.backupTranslationFile)
@@ -3582,6 +3592,31 @@ class MyMainWindow(QtGui.QMainWindow):
 
         return retBool, retNumOfMatchesInCell, retColNum, retRowNum
 
+    #|#|#|#|#|#|#
+    #
+    # SPELLING METHODS
+    #
+    #|#|#|#|#|#|#
+    def spellCheckTranslation(self):
+        pass
+
+    def findNextSpellingErrorQuote(self):
+        pass
+
+    def findPrevSpellingErrorQuote(self):
+        pass
+
+    def showSuggestionsForSpellingErrorsInSelectedQuote(self):
+        # check if quote from translation
+        # get all errors
+        # list the unique error words (up to 5), then the series of suggestions (up to 5).
+        # if more than 5 distinct error words, display subsequent messageboxes for the rest (batches of 5 or less)
+        #
+
+        pass
+
+    #|#|#|#|#|#|#|
+
     #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     # TODO: TO ORIO THS PROTASHS DEN EINAI TO IDIO GIA OLA TA ARXEIA. FIX PER CASE!!!
@@ -3945,6 +3980,11 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionFind_Previous_Marked.setEnabled(pFlagEnable)
         self.ui.actionFind_Next_Unchanged.setEnabled(pFlagEnable)
         self.ui.actionFind_Previous_Unchanged.setEnabled(pFlagEnable)
+        self.ui.actionCheck_translation.setEnabled(pFlagEnable)
+        self.ui.actionGo_to_next_error.setEnabled(pFlagEnable)
+        self.ui.actionGo_to_previous_error.setEnabled(pFlagEnable)
+        self.ui.menuSpell_Checker.setEnabled(pFlagEnable)
+        self.ui.menuSpellingLanguage.setEnabled(pFlagEnable)
 
         self.ui.actionFind_Next_Conflicted.setEnabled(pFlagEnable)
         self.ui.actionFind_Previous_Conflicted.setEnabled(pFlagEnable)

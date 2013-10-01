@@ -801,8 +801,24 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <widget class="QMenu" name="menuSpell_Checker">
+     <property name="title">
+      <string>Spell Checker</string>
+     </property>
+     <widget class="QMenu" name="menuSpellingLanguage">
+      <property name="title">
+       <string>Language</string>
+      </property>
+      <addaction name="actionEnglish"/>
+     </widget>
+     <addaction name="actionCheck_translation"/>
+     <addaction name="menuSpellingLanguage"/>
+     <addaction name="actionGo_to_next_error"/>
+     <addaction name="actionGo_to_previous_error"/>
+    </widget>
     <addaction name="actionFont_crafting"/>
     <addaction name="actionRepacker"/>
+    <addaction name="menuSpell_Checker"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuSearch"/>
@@ -976,6 +992,26 @@
   <action name="actionReplaceRegExp">
    <property name="text">
     <string>Replace (with RegEx)...</string>
+   </property>
+  </action>
+  <action name="actionCheck_translation">
+   <property name="text">
+    <string>Check translation</string>
+   </property>
+  </action>
+  <action name="actionGo_to_next_error">
+   <property name="text">
+    <string>Go to next spelling error</string>
+   </property>
+  </action>
+  <action name="actionGo_to_previous_error">
+   <property name="text">
+    <string>Go to previous error</string>
+   </property>
+  </action>
+  <action name="actionEnglish">
+   <property name="text">
+    <string>English</string>
    </property>
   </action>
  </widget>
