@@ -1818,9 +1818,9 @@ class MyMainWindow(QtGui.QMainWindow):
                 lmRows = lm.rowCount()
                 if ((indexRow+1) < lmRows):
                     newIndex = lm.index(indexRow+1, indexCol, QModelIndex())
-                self.quoteTableView.setCurrentIndex(newIndex)
-                self.quoteTableView.setFocus()
-                self.quoteTableView.edit(newIndex)
+                    self.quoteTableView.setCurrentIndex(newIndex)
+                    self.quoteTableView.setFocus()
+                    self.quoteTableView.edit(newIndex)
             elif qEditHint == 0:
                 #print "row: ", indexRow, " col: ", indexCol
                 if ((indexRow) > 0):
