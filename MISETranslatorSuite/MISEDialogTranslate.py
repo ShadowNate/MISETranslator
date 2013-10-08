@@ -410,6 +410,8 @@ class MyMainWindow(QtGui.QMainWindow):
     jSettingsInMemDict = None
 
     DBFileNameAndRelPath = ""
+    dictionariesFolderFound = False
+    fullDictionariesPath = ""
     defGameID = 1 # SomiSE
     basedir = u"."
     icon = None
@@ -455,7 +457,15 @@ class MyMainWindow(QtGui.QMainWindow):
             self.basedir = os.path.dirname(__file__)
 
         print enchant.list_languages()
-        enchant.set_param("enchant.myspell.dictionary.path",os.path.join(self.relPath,self.dictionariesFolderName))
+
+        fullDictionariesPath = os.path.join(self.relPath,self.dictionariesFolderName)
+        if(not os.access(self.dictionariesFolderName, os.F_OK)) :
+            print "Dictionaries folder not found"
+            self.dictionariesFolderFound = False
+        else:
+            self.dictionariesFolderFound = True
+            enchant.set_param("enchant.myspell.dictionary.path",fullDictionariesPath)
+
         print enchant.get_param("enchant.myspell.dictionary.path")
         print enchant.list_languages()
         # http://stackoverflow.com/questions/8753973/pyqt-qmenu-dropdown-direction
@@ -4012,8 +4022,12 @@ class MyMainWindow(QtGui.QMainWindow):
         self.ui.actionCheck_translation.setEnabled(pFlagEnable)
         self.ui.actionGo_to_next_error.setEnabled(pFlagEnable)
         self.ui.actionGo_to_previous_error.setEnabled(pFlagEnable)
-        self.ui.menuSpell_Checker.setEnabled(pFlagEnable)
-        self.ui.menuSpellingLanguage.setEnabled(pFlagEnable)
+        if (self.dictionariesFolderFound):
+            self.ui.menuSpell_Checker.setEnabled(pFlagEnable)
+            self.ui.menuSpellingLanguage.setEnabled(pFlagEnable)
+        else:
+            self.ui.menuSpell_Checker.setEnabled(False)
+            self.ui.menuSpellingLanguage.setEnabled(False)
 
         self.ui.actionFind_Next_Conflicted.setEnabled(pFlagEnable)
         self.ui.actionFind_Previous_Conflicted.setEnabled(pFlagEnable)
