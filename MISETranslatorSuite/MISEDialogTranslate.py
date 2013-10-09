@@ -10,7 +10,7 @@ from struct import *
 import time
 import re
 import hashlib
-import enchant
+#import enchant
 import sqlite3
 from math import trunc
 
@@ -456,7 +456,8 @@ class MyMainWindow(QtGui.QMainWindow):
         else:
             self.basedir = os.path.dirname(__file__)
 
-        print enchant.list_languages()
+        # removed temporarily because of bad portability
+        #print enchant.list_languages()
 
         fullDictionariesPath = os.path.join(self.relPath,self.dictionariesFolderName)
         if(not os.access(self.dictionariesFolderName, os.F_OK)) :
@@ -464,10 +465,12 @@ class MyMainWindow(QtGui.QMainWindow):
             self.dictionariesFolderFound = False
         else:
             self.dictionariesFolderFound = True
-            enchant.set_param("enchant.myspell.dictionary.path",fullDictionariesPath)
+            # removed temporarily because of bad portability
+            #enchant.set_param("enchant.myspell.dictionary.path",fullDictionariesPath)
 
-        print enchant.get_param("enchant.myspell.dictionary.path")
-        print enchant.list_languages()
+        # removed temporarily because of bad portability
+        #print enchant.get_param("enchant.myspell.dictionary.path")
+        #print enchant.list_languages()
         # http://stackoverflow.com/questions/8753973/pyqt-qmenu-dropdown-direction
 
         self.DBFileNameAndRelPath = os.path.join(self.relPath,self.DBFileName)

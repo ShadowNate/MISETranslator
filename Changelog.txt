@@ -1,3 +1,8 @@
+v4.96
+--------
+- [Reverted] Attempt to integrate pyenchant module (bad portability). 
+- [UI] Added shortcuts to navigate upwards or downwards while in edit mode. Shilf+Enter (or return) and Ctrl+Shift+Enter.
+
 v4.95
 --------
 - Subclassed QTableView and implemented new delegates for columns 0 and 1. Support for highlighting, Hints for large hidden texts.
