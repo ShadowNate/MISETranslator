@@ -1,7 +1,7 @@
 v4.96
 --------
 - [Reverted] Attempt to integrate pyenchant module (bad portability). 
-- [UI] Added shortcuts to navigate upwards or downwards while in edit mode. Shilf+Enter (or return) and Ctrl+Shift+Enter.
+- [UI] Added shortcuts to navigate upwards or downwards while in edit mode. Shift+Enter (or Return) for downwards and Ctrl+Shift+Enter (or Return) for upwards. No wrapping i.e. reaching the bottom row moving downwards or the top row moving upwards will not wrap around the quotes.
 
 v4.95
 --------
