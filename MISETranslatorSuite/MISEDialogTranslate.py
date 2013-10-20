@@ -1721,8 +1721,14 @@ class MyMainWindow(QtGui.QMainWindow):
 #                tmpItem = QStandardItem()
                 index = lm.index(rowi, columni, QModelIndex())
                 if columni == 0:
-#                    print listOfEnglishLinesSpeechInfo[rowi][1]
-                    lm.setData(index, unicode(listOfEnglishLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
+                    # DEBUG
+                    #print rowi, ": ", listOfEnglishLinesSpeechInfo[rowi][1]
+                    #do we need origEncoding here?
+                    try:
+                        lm.setData(index, unicode(listOfEnglishLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
+                    except Exception:
+                        lm.setData(index, unicode("***UNABLE TO RETRIEVE****", self.origEncoding), Qt.EditRole)
+
                 elif columni == 1:
 ##                    print localGrabInstance.getActiveEncoding()
 ##                    print listOfEnglishLinesSpeechInfo[rowi][1]
@@ -2169,7 +2175,8 @@ class MyMainWindow(QtGui.QMainWindow):
 
         ##########################################################################
         #  CSV HINTS CASE
-        # Monkey Island 1
+        # Monkey Island 1 and Monkey Island 2
+        # BUGFIX: There is a nasty case at least in MONKEY ISLAND 2, where a hint-group in english won't have as many hints as in other languages. EG: hint starting "Now you should be able to check out Largo's room" has 2 hints. But french has 3! (look indexes addr 0xD4D0 VS 0xD4E0)
         ##########################################################################
         elif (sFilenameOnly == filenameHintsMI1CSV  and self.selGameID==1) or (sFilenameOnly == filenameHintsMI2CSV  and self.selGameID==2):
             fullcopyFileName = self.ui.openTranslatedFileNameTxtBx.text().strip()
@@ -2194,53 +2201,63 @@ class MyMainWindow(QtGui.QMainWindow):
             for rowi in range(0,plithosOfQuotes):
                 index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
                 datoTmp = self.quoteTableView.model().data(index).toPyObject()
-#                print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
-                myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
-                translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
-                origLengthAsMultiSixteen = listOfUntranslatedLinesSpeechInfo[rowi][2] +1 # The file counts the first 0x00 after the end as a character.
-                newLengthAsMultiSixteen = len(translatedTextAsCharsListToWriteWithZeroTerm)  # The file counts the first 0x00 after the end as a character.
-                if origLengthAsMultiSixteen % 16 > 0:
-                    origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
-                if newLengthAsMultiSixteen % 16 > 0:
-                    newLengthAsMultiSixteen = newLengthAsMultiSixteen - (newLengthAsMultiSixteen % 16) + 0x10
-                    while(len(translatedTextAsCharsListToWriteWithZeroTerm) < newLengthAsMultiSixteen):
-                        translatedTextAsCharsListToWriteWithZeroTerm.append('\x00') # we have already appended a 0x00 in the makeStringIntoModifiedAsciiCharlistToBeWritten function
-                deviationOffset = newLengthAsMultiSixteen - origLengthAsMultiSixteen
-#                deviationOffset += diffBetweenLengths
-                # find the index in the list of all quotes copyOFlistOflistsOfAllQuotesHintsCSV
-                transRowMetritis = 0
-                idxOfTransQuoteInWholeList = 0
-                foundIdx = False
-                for tmpOuterIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
-                    for tmpInnerIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt])):
-                        if (transRowMetritis) == rowi and (tmpOuterIt % plithosOfDifferentLanguages == selectedLanguageOffset):
-                            foundIdx = True
-                        if foundIdx == False:
-                            if tmpOuterIt % plithosOfDifferentLanguages == selectedLanguageOffset:
-                                transRowMetritis+=1
-                            idxOfTransQuoteInWholeList+=1
-
-                copyOFlistOfAllLinesHintsCSV[idxOfTransQuoteInWholeList][1] = "".join(translatedTextAsCharsListToWriteWithZeroTerm)
-#                print "Line: %d. Translated text to write: %s" % (rowi, "".join(translatedTextAsCharsListToWriteWithZeroTerm))
-                # shift of the rest quotes
-                if deviationOffset <> 0 :
-                    #debug
-                    #print "ONE SUCH CASE offset = %d for row %d " % (deviationOffset,rowi)
-                    # fix the copyOFlistOfAllLinesHintsCSV addresses
-                    for myiter2 in range(idxOfTransQuoteInWholeList+1, len(copyOFlistOfAllLinesHintsCSV)):
-                        copyOFlistOfAllLinesHintsCSV[myiter2][0] += deviationOffset  # dior8wsh twn die8ynsewn enarkshs twn quotes pou epontai
-                    # also find the position of next quote within the copy of listOflistsOfAllQuotesHintsCSV
-                    auksonMetritis = 0
+                if datoTmp <> "" and listOfUntranslatedLinesSpeechInfo[rowi][2] > 0: #don't store empty slots. and (for now) don't add new quotes!
+    #                print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
+                    myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
+                    translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
+                    origLengthAsMultiSixteen = listOfUntranslatedLinesSpeechInfo[rowi][2] +1 # The file counts the first 0x00 after the end as a character.
+                    newLengthAsMultiSixteen = len(translatedTextAsCharsListToWriteWithZeroTerm)  # The file counts the first 0x00 after the end as a character.
+                    if origLengthAsMultiSixteen % 16 > 0:
+                        origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
+                    if newLengthAsMultiSixteen % 16 > 0:
+                        newLengthAsMultiSixteen = newLengthAsMultiSixteen - (newLengthAsMultiSixteen % 16) + 0x10
+                        while(len(translatedTextAsCharsListToWriteWithZeroTerm) < newLengthAsMultiSixteen):
+                            translatedTextAsCharsListToWriteWithZeroTerm.append('\x00') # we have already appended a 0x00 in the makeStringIntoModifiedAsciiCharlistToBeWritten function
+                    deviationOffset = newLengthAsMultiSixteen - origLengthAsMultiSixteen
+    #                print "Deviation offset: ", rowi+1, deviationOffset
+    #                deviationOffset += diffBetweenLengths
+                    # find the index in the list of all quotes copyOFlistOflistsOfAllQuotesHintsCSV
+                    transRowMetritis = 0
+                    idxOfTransQuoteInWholeList = 0
+                    foundIdx = False
+                    groupQuoteIdx = 0
+                    innerQuoteIdx = 0
                     for tmpOuterIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
                         for tmpInnerIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt])):
-                            if(auksonMetritis > idxOfTransQuoteInWholeList):
-                                copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt][tmpInnerIt] += deviationOffset
-##                                print "Changed"
-                            auksonMetritis+=1
-##                    # and fix the copyOFlistOflistsOfAllQuotesHintsCSV addresses
-##                    for myOuterIter2 in range(tmpOuterIt, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
-##                        for myInnerIter2 in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2])):
-##                            if not (myOuterIter2 == tmpOuterIt and myInnerIter2 < tmpInnerIt):
+                            if (transRowMetritis == rowi) and (tmpOuterIt % plithosOfDifferentLanguages == selectedLanguageOffset):
+                                foundIdx = True
+                                groupQuoteIdx = tmpOuterIt
+                                innerQuoteIdx = tmpInnerIt
+                                break
+                            if foundIdx == False:
+                                if tmpOuterIt % plithosOfDifferentLanguages == selectedLanguageOffset:
+                                    transRowMetritis+=1
+                                idxOfTransQuoteInWholeList+=1
+                        if foundIdx:
+                            break
+
+                    copyOFlistOfAllLinesHintsCSV[idxOfTransQuoteInWholeList][1] = "".join(translatedTextAsCharsListToWriteWithZeroTerm)
+                    #print "Line: %d (%d, %d). Translated text to write: %s" % (rowi+1, groupQuoteIdx, innerQuoteIdx, "".join(translatedTextAsCharsListToWriteWithZeroTerm))
+                    # shift of the rest quotes
+                    if deviationOffset <> 0 :
+                        #debug
+                        #print "ONE SUCH CASE offset = %d for row %d " % (deviationOffset,rowi)
+                        # fix the copyOFlistOfAllLinesHintsCSV addresses
+                        for myiter2 in range(idxOfTransQuoteInWholeList+1, len(copyOFlistOfAllLinesHintsCSV)):
+                            if copyOFlistOfAllLinesHintsCSV[myiter2][0] > 0: #don't add the offset to null addresses
+                                copyOFlistOfAllLinesHintsCSV[myiter2][0] += deviationOffset  # dior8wsh twn die8ynsewn enarkshs twn quotes pou epontai
+                        # also find the position of next quote within the copy of listOflistsOfAllQuotesHintsCSV
+                        auksonMetritis = 0
+                        for tmpOuterIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
+                            for tmpInnerIt in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt])):
+                                if(auksonMetritis > idxOfTransQuoteInWholeList) and (copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt][tmpInnerIt] > 0): #don't add the offset to null addresses
+                                    copyOFlistOflistsOfAllQuotesHintsCSV[tmpOuterIt][tmpInnerIt] += deviationOffset
+    ##                                print "Changed"
+                                auksonMetritis+=1
+    ##                    # and fix the copyOFlistOflistsOfAllQuotesHintsCSV addresses
+    ##                    for myOuterIter2 in range(tmpOuterIt, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
+    ##                        for myInnerIter2 in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2])):
+    ##                            if not (myOuterIter2 == tmpOuterIt and myInnerIter2 < tmpInnerIt):
 
             #
             # TO DO eventually write to the file the whole structure from start address 0x76B0 (the copyOFlistOflistsOfAllQuotesHintsCSV matrix) and continue with the quotes dump
@@ -2252,7 +2269,10 @@ class MyMainWindow(QtGui.QMainWindow):
             for myOuterIter2 in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV)):
                 for myInnerIter2 in range(0, len(copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2])):
                     tmpOpenFile.seek(beginAddrOfIndexMatrix + 0x10 * myOuterIter2 + 4*myInnerIter2)
-                    tmpPackedIndex = pack('<L', copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2][myInnerIter2] - beginAddrOfIndexMatrix - 0x10 * myOuterIter2 - 4*myInnerIter2)
+                    if(copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2][myInnerIter2] > 0) :
+                        tmpPackedIndex = pack('<L', copyOFlistOflistsOfAllQuotesHintsCSV[myOuterIter2][myInnerIter2] - (beginAddrOfIndexMatrix + 0x10 * myOuterIter2 + 4*myInnerIter2))
+                    else:
+                        tmpPackedIndex = pack('<L', 0)
                     tmpOpenFile.write(tmpPackedIndex)
             #
             # write then the dump of the quotes in all languages as per copyOFlistOfAllLinesHintsCSV
@@ -2263,8 +2283,9 @@ class MyMainWindow(QtGui.QMainWindow):
 
             tmpOpenFile.seek(beginAddrOfIndexMatrix + 0x10 * len(copyOFlistOflistsOfAllQuotesHintsCSV))
             for myiter2 in range(0, len(copyOFlistOfAllLinesHintsCSV)):
-                tmpOpenFile.seek(copyOFlistOfAllLinesHintsCSV[myiter2][0])
-                tmpOpenFile.write(copyOFlistOfAllLinesHintsCSV[myiter2][1])
+                if copyOFlistOfAllLinesHintsCSV[myiter2][0] > 0:
+                    tmpOpenFile.seek(copyOFlistOfAllLinesHintsCSV[myiter2][0])
+                    tmpOpenFile.write(copyOFlistOfAllLinesHintsCSV[myiter2][1])
             tmpOpenFile.truncate()
             tmpOpenFile.close()
             (savedFlag, mySessionName, myFullPathToOrigFile, myFullPathToTransFile, myGameID, myID, myOrigFileMD5, myTransFileMD5) = self.createAndSaveSession(fullPathsFilename, fullcopyFileName)
@@ -4423,7 +4444,7 @@ class MyMainWindow(QtGui.QMainWindow):
         #
         elif ( sFilename == filenameHintsMI1CSV  and detectedGameId==1) or (sFilename == filenameHintsMI2CSV and detectedGameId==2):
             # read from hex addr: 0x76B0. (MISE) there is an matrix of indexes to the start addresse of the quotes.
-            # for MI2:SE it seesm to be 0xC6C0
+            # for MI2:SE it seems to be 0xC6C0
             # Each entry 4 words (4x4 bytes) for as many as 4 hints of the same language id). (little endian -reverse order in bytes)
             # Each word points to the address that is the sum of its value and its own start address
             endOfFileReached = False
@@ -4469,11 +4490,14 @@ class MyMainWindow(QtGui.QMainWindow):
                                 quoteStartAddr = readNdx + startOfNewMatrixEnrty + myiter*4
                                 if readNdx <> 0:
                                     tmpListForOneHintSeries.append(quoteStartAddr)
-                                if readNdx == 0 or myiter == (maxNumOfHintsInSeries -1):
+                                else:
+                                    tmpListForOneHintSeries.append(0x00)
+                                if myiter == (maxNumOfHintsInSeries -1): # or readNdx == 0: # we no longer cut the unused slots.
                                     listOflistsOfAllQuotesHintsCSV.append(tmpListForOneHintSeries)
                                     detectedHintSetEntries += 1
                                     break
                             myiter+=1
+                    #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ??????????????????????????
                     #debug
                     #print "Total Entries found %d" % detectedHintSetEntries
                     ndx = 0
@@ -4502,25 +4526,31 @@ class MyMainWindow(QtGui.QMainWindow):
                                 # the begin addr is calcualted similarly for both uiText and Speech.info
                                 beginAddrOfUntransQuote = listOflistsOfAllQuotesHintsCSV[ndx+selectedLanguageOffset][innerNdx]
                                 #origSpeechInfoFile.seek(beginAddrOfUntransQuote)
-                                it02 = 0
-                                while True:
-                                    #tmpChar = origSpeechInfoFile.read(1)
-                                    tmpChar = self.myFileBuffRead(wholeOrigSpeechInfoFile, beginAddrOfUntransQuote+it02, 1)
-                                    it02 += 1
-                                    if tmpChar == "":
-                                        endOfFileReached = True
-                                        break
-                                    newChar = unpack('B', tmpChar)
-                                    if chr(newChar[0]) <> '\x00':
-                                        if retrieveQuotesFlag == True:
-                                            newUntransQuotelength += 1
-                                            quoteUntransCharList.append(chr(newChar[0]))
-                                    else:
-                                        detectedNumOfQuotes += 1
-                                        break
+                                if beginAddrOfUntransQuote > 0:
+                                    it02 = 0
+                                    while True:
+                                        #tmpChar = origSpeechInfoFile.read(1)
+                                        tmpChar = self.myFileBuffRead(wholeOrigSpeechInfoFile, beginAddrOfUntransQuote+it02, 1)
+                                        it02 += 1
+                                        if tmpChar == "":
+                                            endOfFileReached = True
+                                            break
+                                        newChar = unpack('B', tmpChar)
+                                        if chr(newChar[0]) <> '\x00':
+                                            if retrieveQuotesFlag == True:
+                                                newUntransQuotelength += 1
+                                                quoteUntransCharList.append(chr(newChar[0]))
+                                        else:
+                                            detectedNumOfQuotes += 1
+                                            break
+                                    if endOfFileReached == False and retrieveQuotesFlag == True:
+                                        newQuoteStringThroughGUIPresentFilter = self.makeStringInReadableExtAsciiCharlistToBeListed(quoteUntransCharList, pGrabberForTranslationDicts)
+                                else: # empty slot
+                                    newQuoteStringThroughGUIPresentFilter =""
+                                    detectedNumOfQuotes += 1        # again we increase the count
+
                                 if endOfFileReached == False and retrieveQuotesFlag == True:
     ##                            print quoteUntransCharList
-                                    newQuoteStringThroughGUIPresentFilter = self.makeStringInReadableExtAsciiCharlistToBeListed(quoteUntransCharList, pGrabberForTranslationDicts)
                                     retrievedQuotesList.append((newQuoteStringThroughGUIPresentFilter, newUntransQuotelength))
 
         #
@@ -4903,6 +4933,8 @@ class MyMainWindow(QtGui.QMainWindow):
         ##########################################################################
         #  CSV HINTS CASE
         # MONKEY ISLAND 1 & MI 2
+        # BUGFIX: There is a nasty case at least in MONKEY ISLAND 2, where a hint-group in english won't have as many hints as in other languages. EG: hint starting "Now you should be able to check out Largo's room" has 2 hints. But french has 3! (look indexes addr 0xD4D0 VS 0xD4E0)
+        #         We present a verbose version of the hints (even the empty slots!)
         ##########################################################################
         elif ( sFilename == filenameHintsMI1CSV  and self.selGameID==1) or (sFilename == filenameHintsMI2CSV and self.selGameID==2):
 
@@ -4919,17 +4951,19 @@ class MyMainWindow(QtGui.QMainWindow):
             self.loadASession(pSessionName = None, pOriginalfullPathsFilename = fullPathsFilename)
 
             # from the original file we need the original untranslated foreign language quotes!
+            #print "FULL PATH ORIG FILE", fullPathsFilename
             origSpeechInfoFile = open(fullPathsFilename, 'rb')
             wholeOrigSpeechInfoFile = origSpeechInfoFile.read()
             origSpeechInfoFile.close()
 
             fullcopyFileName = self.ui.openTranslatedFileNameTxtBx.text().strip()
+            #print "FULL PATH TARG FILE", fullcopyFileName
             copySpeechInfoFile = open(fullcopyFileName, 'rb')
             wholeCopySpeechInfoFile = copySpeechInfoFile.read()
             copySpeechInfoFile.close()
 
             # read from hex addr: 0x76B0. (MISE) there is an matrix of indexes to the start addresse of the quotes.
-            # for MI2:SE it seesm to be 0xC6C0
+            # for MI2:SE it seems to be 0xC6C0
             # Each entry 4 words (4x4 bytes) for as many as 4 hints of the same language id). (little endian -reverse order in bytes)
             # Each word points to the address that is the sum of its value and its own start address
             matrixOfIndexesForHints = [] # a list with entries lists of at most 4 integers (indexes)
@@ -4987,11 +5021,14 @@ class MyMainWindow(QtGui.QMainWindow):
                             quoteStartAddr = readNdx + startOfNewMatrixEnrty + myiter*4
                             if readNdx <> 0:
                                 tmpListForOneHintSeries.append(quoteStartAddr)
-                            if readNdx == 0 or myiter == (maxNumOfHintsInSeries -1):
+                            else:
+                                tmpListForOneHintSeries.append(0x00)
+                            if myiter == (maxNumOfHintsInSeries -1): # or readNdx == 0: # we no longer cut the unused slots.
                                 listOflistsOfAllQuotesHintsCSV.append(tmpListForOneHintSeries)
                                 detectedHintSetEntries += 1
                                 break
                         myiter+=1
+
                     #
                     # identical for populating localListOflistsOfAllQuotesHintsCSVOrigFile for the original file
                     #
@@ -5009,13 +5046,17 @@ class MyMainWindow(QtGui.QMainWindow):
                             quoteStartAddr = readNdx + startOfNewMatrixEnrty + myiterOrig*4
                             if readNdx <> 0:
                                 tmpListForOneHintSeriesOrig.append(quoteStartAddr)
-                            if readNdx == 0 or myiterOrig == (maxNumOfHintsInSeries -1):
+                            else:
+                                tmpListForOneHintSeriesOrig.append(0x00)
+                            if myiterOrig == (maxNumOfHintsInSeries -1): # or readNdx == 0: # we no longer cut the unused slots.
                                 localListOflistsOfAllQuotesHintsCSVOrigFile.append(tmpListForOneHintSeriesOrig)
                                 #detectedHintSetEntries += 1
                                 break
                         myiterOrig+=1
                 #debug
                 #print "Total Entries found %d" % detectedHintSetEntries
+                #DEBUG
+                #print "listOflistsOfAllQuotesHintsCSV 226: ", listOflistsOfAllQuotesHintsCSV[226]
                 ndx = 0
                 for ndx in range (0, numofEntries):
     #            while ndx < len(listOflistsOfAllQuotesHintsCSV):
@@ -5037,41 +5078,46 @@ class MyMainWindow(QtGui.QMainWindow):
                             del origQuoteUntransCharList[:]
                             beginAddrOfEnglishQuote = listOflistsOfAllQuotesHintsCSV[ndx][innerNdx]
                             #copySpeechInfoFile.seek(beginAddrOfEnglishQuote)
-                            it00 = 0
-                            while True:
-                                #tmpChar = copySpeechInfoFile.read(1)
-                                tmpChar = self.myFileBuffRead(wholeCopySpeechInfoFile, beginAddrOfEnglishQuote+it00, 1)
-                                it00 += 1
-                                if tmpChar == "":
-                                    endOfFileReached = True
-                                    break
-                                newChar = unpack('B', tmpChar)
-                                if chr(newChar[0]) <> '\x00':
-                                    newQuotelength += 1
-                    #                print newChar[0]
-                                    quoteCharList.append(chr(newChar[0]))
-                                else:
-                                    break
+                            if beginAddrOfEnglishQuote > 0:
+                                it00 = 0
+                                while True:
+                                    #tmpChar = copySpeechInfoFile.read(1)
+                                    tmpChar = self.myFileBuffRead(wholeCopySpeechInfoFile, beginAddrOfEnglishQuote+it00, 1)
+                                    it00 += 1
+                                    if tmpChar == "":
+                                        endOfFileReached = True
+                                        break
+                                    newChar = unpack('B', tmpChar)
+                                    if chr(newChar[0]) <> '\x00':
+                                        newQuotelength += 1
+                        #                print newChar[0]
+                                        quoteCharList.append(chr(newChar[0]))
+                                    else:
+                                        break
 
-                            if endOfFileReached == False:
-    #                            print quoteCharList
-                                newQuoteString = self.makeOriginalStringWithEscapeSequences(quoteCharList)
-                                #
-                                # SPECIAL FOR HINTS CSV the original quote is stored untouched and with the padded 0x10!
-                                #
-                                quoteCharList.append('\x00')
-                                origLengthAsMultiSixteen = newQuotelength + 1 # The file counts the first 0x00 after the end as a character.
-                                if origLengthAsMultiSixteen % 16 > 0:
-                                    origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
-                                    while(len(quoteCharList) < origLengthAsMultiSixteen):
-                                        quoteCharList.append('\x00')
-                                newUntouchedQuoteString = "".join(quoteCharList)
+                                if endOfFileReached == False:
+        #                            print quoteCharList
+                                    newQuoteString = self.makeOriginalStringWithEscapeSequences(quoteCharList)
+                                    #
+                                    # SPECIAL FOR HINTS CSV the original quote is stored untouched and with the padded 0x10!
+                                    #
+                                    quoteCharList.append('\x00')
+                                    origLengthAsMultiSixteen = newQuotelength + 1 # The file counts the first 0x00 after the end as a character.
+                                    if origLengthAsMultiSixteen % 16 > 0:
+                                        origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
+                                        while(len(quoteCharList) < origLengthAsMultiSixteen):
+                                            quoteCharList.append('\x00')
+                                    newUntouchedQuoteString = "".join(quoteCharList)
+                            else: #empty slot
+                                newQuoteString = ""
+                                newUntouchedQuoteString = ""
+                                newQuotelength = 0
                 #               # DEBUG!
-                #                print "Remade char list: %s" % self.remakeCharlistWithNoEscapeSequences(newQuoteString)
-
-                                # read the untranslated quote bytes of the selected language.
-                                # the begin addr is calcualted similarly for both uiText and Speech.info
-                                beginAddrOfUntransQuote = listOflistsOfAllQuotesHintsCSV[ndx+pSelectedLanguageOffset][innerNdx]
+                #                print "Remade char list: %s" % newQuoteString #self.remakeCharlistWithNoEscapeSequences(newQuoteString)
+                            # read the untranslated quote bytes of the selected language.
+                            # the begin addr is calculated similarly for both uiText and Speech.info
+                            beginAddrOfUntransQuote = listOflistsOfAllQuotesHintsCSV[ndx+pSelectedLanguageOffset][innerNdx]
+                            if beginAddrOfUntransQuote > 0:
                                 #copySpeechInfoFile.seek(beginAddrOfUntransQuote)
                                 it01 = 0
                                 while True:
@@ -5087,9 +5133,16 @@ class MyMainWindow(QtGui.QMainWindow):
                                         quoteUntransCharList.append(chr(newChar[0]))
                                     else:
                                         break
-                                #
-                                # the original foreign quote is in the same position in the original file. OR IS IT?
-                                beginAddrOfUntransQuoteOrig = localListOflistsOfAllQuotesHintsCSVOrigFile[ndx+pSelectedLanguageOffset][innerNdx]
+                                if endOfFileReached == False:
+                                    newUntransQuoteString = self.makeStringInReadableExtAsciiCharlistToBeListed(quoteUntransCharList, pGrabberForTranslationDicts)
+                            else: # empty slot
+                                newUntransQuoteString =""
+                                newUntransQuotelength = 0
+
+                            #
+                            # the original foreign quote is in the same position in the original file. OR IS IT?
+                            beginAddrOfUntransQuoteOrig = localListOflistsOfAllQuotesHintsCSVOrigFile[ndx+pSelectedLanguageOffset][innerNdx]
+                            if beginAddrOfUntransQuote > 0:
                                 #origSpeechInfoFile.seek(beginAddrOfUntransQuoteOrig)
                                 it02 = 0
                                 while True:
@@ -5105,13 +5158,15 @@ class MyMainWindow(QtGui.QMainWindow):
                                         origQuoteUntransCharList.append(chr(newChar[0]))
                                     else:
                                         break
-
+                                if endOfOrigFileReached == False:
+                                    newQuoteStringThroughGUIPresentFilter = self.makeStringInReadableExtAsciiCharlistToBeListed(origQuoteUntransCharList, pGrabberForTranslationDicts)
+                            else: # empty slot
+                                newQuoteStringThroughGUIPresentFilter =""
+                                origNewUntransQuotelength = 0
 
                             #
                             if endOfFileReached == False:
     ##                            print quoteUntransCharList
-                                newUntransQuoteString = self.makeStringInReadableExtAsciiCharlistToBeListed(quoteUntransCharList, pGrabberForTranslationDicts)
-                                newQuoteStringThroughGUIPresentFilter = self.makeStringInReadableExtAsciiCharlistToBeListed(origQuoteUntransCharList, pGrabberForTranslationDicts)
                                 #if newQuotelength == 0 or newUntransQuotelength == 0:
                 #               # DEBUG
                 #                print "Translating: %s length: %d" % (newQuoteString, newQuotelength)
@@ -5120,7 +5175,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                 listOfUntranslatedLinesSpeechInfo.append((beginAddrOfUntransQuote,newUntransQuoteString,newUntransQuotelength))
                                 listOfForeignLinesOrigSpeechInfo.append((newQuoteStringThroughGUIPresentFilter,origNewUntransQuotelength)) # new for detecting changed lines and for merging function
 
-                                listOfAllLinesHintsCSV.append((beginAddrOfEnglishQuote,newUntouchedQuoteString,newQuotelength)) # ONLY for the original quote we append in the WHOLE list. For the untranslated this is done in the else statement with the other languages in its proper turn
+                                listOfAllLinesHintsCSV.append((beginAddrOfEnglishQuote,newUntouchedQuoteString,newQuotelength)) # ONLY for the original quote we append in the WHOLE list.
+                                                                                                                                #For the untranslated this is done in the else statement with the other languages in its proper turn
                 #                print specialCharQuoteList
                 #                print quoteUntransCharList
 
@@ -5129,7 +5185,8 @@ class MyMainWindow(QtGui.QMainWindow):
                                 if newUntransQuotelength == 0:
                                     countOfZeroLengthTransQuotes += 1
                         #end inner for loop
-                    else: #if we are in one of the rest languages quotes (including the one we are translating into.HERE WE APPEND IN THE FULL LIST OF QUOTES)
+                    else: #if we are in one of the rest languages quotes (including the one we are translating into.
+                                # HERE WE APPEND IN THE FULL LIST OF QUOTES)
                         for innerNdx in range(0, len(listOflistsOfAllQuotesHintsCSV[ndx])):
                             newRestQuoteString = ""
                             newRestQuotelength = 0
@@ -5137,30 +5194,35 @@ class MyMainWindow(QtGui.QMainWindow):
                             del quoteCharList[:]
                             del quoteUntransCharList[:]
                             beginAddrOfRestQuote = listOflistsOfAllQuotesHintsCSV[ndx][innerNdx]
-                            #copySpeechInfoFile.seek(beginAddrOfRestQuote)
-                            it00 = 0
-                            while True:
-                                #tmpChar = copySpeechInfoFile.read(1)
-                                tmpChar = self.myFileBuffRead(wholeCopySpeechInfoFile, beginAddrOfRestQuote+it00, 1)
-                                it00 += 1
-                                if tmpChar == "":
-                                    endOfFileReached = True
-                                    break
-                                newChar = unpack('B', tmpChar)
-                                if chr(newChar[0]) <> '\x00':
-                                    newRestQuotelength += 1
-                    #                print newChar[0]
-                                    quoteCharList.append(chr(newChar[0]))
-                                else:
-                                    break
-                            if endOfFileReached == False:
-                                origLengthAsMultiSixteen = newRestQuotelength + 1 # The file counts the first 0x00 after the end as a character.
-                                if origLengthAsMultiSixteen % 16 > 0:
-                                    origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
-                                    while(len(quoteCharList) < origLengthAsMultiSixteen):
-                                        quoteCharList.append('\x00')
+                            if beginAddrOfRestQuote > 0:
+                                #copySpeechInfoFile.seek(beginAddrOfRestQuote)
+                                it00 = 0
+                                while True:
+                                    #tmpChar = copySpeechInfoFile.read(1)
+                                    tmpChar = self.myFileBuffRead(wholeCopySpeechInfoFile, beginAddrOfRestQuote+it00, 1)
+                                    it00 += 1
+                                    if tmpChar == "":
+                                        endOfFileReached = True
+                                        break
+                                    newChar = unpack('B', tmpChar)
+                                    if chr(newChar[0]) <> '\x00':
+                                        newRestQuotelength += 1
+                        #                print newChar[0]
+                                        quoteCharList.append(chr(newChar[0]))
+                                    else:
+                                        break
+                                if endOfFileReached == False:
+                                    origLengthAsMultiSixteen = newRestQuotelength + 1 # The file counts the first 0x00 after the end as a character.
+                                    if origLengthAsMultiSixteen % 16 > 0:
+                                        origLengthAsMultiSixteen = origLengthAsMultiSixteen - (origLengthAsMultiSixteen % 16) + 0x10
+                                        while(len(quoteCharList) < origLengthAsMultiSixteen):
+                                            quoteCharList.append('\x00')
 
-                                newRestQuoteString = "".join(quoteCharList)
+                                    newRestQuoteString = "".join(quoteCharList)
+                            else: #empty slot
+                                newRestQuoteString =""
+                                newRestQuotelength = 0
+                            if endOfFileReached == False:
                                 listOfAllLinesHintsCSV.append((beginAddrOfRestQuote,newRestQuoteString,newRestQuotelength))
                                 # not really needed this check.
                                 if newRestQuotelength == 0:

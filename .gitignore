@@ -3,6 +3,7 @@
 /trampol.sqlite
 /MISETranslatorSuite/*.info
 /MISETranslatorSuite/*.info.meta
+/MISETranslatorSuite/*.hints.csv
 /MISETranslatorSuite/trampol.sqlite
 /MISETranslatorSuite/test/*
 /MISETranslatorSuite/mysessions.txt
