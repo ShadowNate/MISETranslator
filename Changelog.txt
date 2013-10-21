@@ -1,3 +1,7 @@
+v4.97
+--------
+- [BUGFIX] MI2:SE has at least one hint group in monkey2.hints.csv (starting with "Now you should be able to check out Largo's room" ), that has less hints (2) than the French version (3).
+
 v4.96
 --------
 - [Reverted] Attempt to integrate pyenchant module (bad portability). 
