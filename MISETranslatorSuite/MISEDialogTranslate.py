@@ -2201,7 +2201,7 @@ class MyMainWindow(QtGui.QMainWindow):
             for rowi in range(0,plithosOfQuotes):
                 index =  self.quoteTableView.model().index(rowi, 1, QModelIndex())
                 datoTmp = self.quoteTableView.model().data(index).toPyObject()
-                if datoTmp <> "" and listOfUntranslatedLinesSpeechInfo[rowi][2] > 0: #don't store empty slots. and (for now) don't add new quotes!
+                if datoTmp <> "" and datoTmp.strip() <> "" and listOfUntranslatedLinesSpeechInfo[rowi][2] > 0: #don't store empty slots. and (for now) don't add new quotes!
     #                print "Line: %d. Translated text: %s" % ( rowi, datoTmp)
                     myASCIIString = unicode.encode("%s" % datoTmp, self.activeEnc)
                     translatedTextAsCharsListToWriteWithZeroTerm = self.makeStringIntoModifiedAsciiCharlistToBeWritten(myASCIIString, self.localGrabInstance)
