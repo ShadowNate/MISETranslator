@@ -7,6 +7,7 @@
 /MISETranslatorSuite/trampol.sqlite
 /MISETranslatorSuite/test/*
 /MISETranslatorSuite/mysessions.txt
+/MISETranslatorSuite/mysessions.txt.*
 /MISETranslatorSuite/mysessions-empty.txt
 /MISETranslatorSuite/mysessions-filled.txt
 /test
