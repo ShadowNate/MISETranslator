@@ -37,6 +37,7 @@ from monkeySERepakGUI import MyMainRepackerDLGWindow
 import json
 
 ######
+# TODO: Small paint bug when scrolling down. Pending lines sometimes are not fully bg-colored (only the cell of the pending checkbox is). It is fixed with scrolling up-down but it happens too often!
 # TODO: Use QTextCharFormat.WaveUnderline for marking the mispelled words (spell checker)
 # TODO: export to excel ?
 # TODO: import from excel ?
@@ -46,50 +47,59 @@ import json
 # TODO: Sorting books (library catalogue cards MI2:SE) uses system locale. It should use a locale associated with the selected encoding!
 
 ######
+# TODO: un/mark multiple lines
+# TODO: ADD: Search ANY Column option
+# TODO: online updates!
+# TODO: Show uncomitted lines in report (needs update of saved lines with every submit!)
+# TODO: Show an animated icon while opening/loading something/merging/etc, to make processing time more friendly to user (otherwise may appear as frozen, un-responding)
+
 # TODO: use errMsg to show message Errors that were previously printed in console.
 # TODO: use search for "TODO: debug and error"  find the Errors that were previously printed in console.
 
-# TODO: Show uncomitted lines in report (needs update of saved lines with every submit!)
-# TODO: show an animated icon while opening/loading something/merging/etc
 # TODO: Check OPENED files as well for validity (valid headers, if they are what their extension states) (based on the check in the getQuoteNumberInFile method!)
 # TODO: Check if uiText and speech.info MI:Se and MI2:SE have the same issue (with open file detecting fewer lines now!). FIXED more tests pending
 
 # TODO: load file in session could restrict filter wildcard to the active session's related/allowed types only!
-# TODO: for now, make the encoding field read-only!
-# REVERTED (the removal of ε from grabber SO NOT NEEDED ANYMORE !! IMPORTANT NOTE: line 8610 fr.speech.info 0x94 -> ά. This should be explicitly set as a normal quote symbol " in the translation, by the translator
-# TODO:  test load into session for credit files
+# TODO: for now, make the encoding field read-only! Done?
+# [REVERTED] (the removal of ε from grabber SO NOT NEEDED ANYMORE !! IMPORTANT NOTE: line 8610 fr.speech.info 0x94 -> ά. This should be explicitly set as a normal quote symbol " in the translation, by the translator
+# TODO:  test load into session for credit files. Done?
 
 # TODO: bug? sessions store absolute paths... Could be alleviated with force loading a backup file into a session!
-# TODO: 3a. maKe exe
-# TODO: 3c. Cleanup my sqlite dbase before redistribution
-# TODO: 4b. Ability to have multiple sessions for the same original file (by default load the most updated) ??
-# TODO: Locate and copy to destination folder
-# TODO: un/mark multiple lines
-
+# TODO[STEP FOR BINARY RELEASE]: 3a. maKe exe
+# TODO[STEP FOR BINARY RELEASE]: 3c. Cleanup my sqlite dbase before redistribution
+# TODO[STEP FOR BINARY RELEASE]: 4b. Ability to have multiple sessions for the same original file (by default load the most updated) ??
+# TODO: Locate MI:SE, MI2:SE installation and implement copy (the tools modified files output) to destination folder
 # TODO: Delete a session and let it be recreated to see if the auto-inc works!
 
-# TODO: Produce fonts for all fonts MI2:SE
-# TODO: SPECIAL HANDLE NEEDED! sto MISE2 to A0 sta en.xxx kai fr.xxx (alla oxi sto geniko speech.info) xrhsimopoieitai san keno, pi8anotata keno pou den mporei na diaspastei apo new line!!!. Done?
+# TODO[TRANSLATION TASK]: Produce fonts for all fonts MI2:SE
+# TODO: SPECIAL HANDLE NEEDED! In MISE2 the A0 charcter in  en.xxx and fr.xxx (but not in the generic speech.info) is used as a blank space, possibly a white space than can't be broken by a new line! Done?
 # TODO: find out exactly which characters get changed after just loading and storing the speech.info (or the fr.speech.info). Are they all unneeded or are there special chars there? (MI2:SE). Done?
 
-# TODO: ADD: Search ANY Column option
 # TODO: Dirty bit (save before quit or before open other file)
-# TODO: online updates!
-# TODO: Support for other languages.
-# TODO: Add menu, with Open, About and Another Open to import the configuration for the letter matchings. (the setting of matchings should be done in the FontsTranslation -Module or -GUI)
 # TODO: Configuration tab. Table for making additions of new characters (and their correspondances to characters in the font files...)
 # TODO: use md5 to recognize the original files. Make it configurable (to add md5 checksums for files if they are ever updated)
 # TODO: Upon errors encountered, print where they were encountered (no prints to the console, append them in a log or in the messagebox with new-line separators)
+# TODO: Remove all explicit references to myEncoding and Windows-1253 and 69 and 0x9a and 0x99 and the dictionariues with greek letters and FRENCH
+# TODO: Autosave feature?
+# TODO: Note about the SoMI bugs that were "fixed" by changing the classic version (and a how-to). This could be integrated in the interface also (produce the text required in the classic version for the bug cases (lens, The Sea Monkey, 173 piece of eight or sth)
+
+# WONTDO: Add menu option with another 'Open" to import the configuration for the letter matchings. (the setting of matchings should be done in the FontsTranslation -Module or -GUI)
+# DONE[UNTESTED]: Support for other languages.
+## DONE: Add menu, with Open, About
 ## DONE: Additional search options: Find next Marked, Find previous Marked, Total marked
 ## DONE: Additional search options: Find next Changed, Find previous Changed,
 ## DONE: Additional text field: Report Total Changed --> it is in the report dialogue
 ## DONE: Additional search options: Find next Pending, Find previous Pending, Report Total Pending
 ## DONE: Additional text field: Report Total Pending --> it is in the report dialogue
 ## DONE: CHECK: Support all Formats of files for MONKEY ISLAND 2! Check if it breaks compatibility with SoMI:SE
-# TODO: Remove all explicit references to myEncoding and Windows-1253 and 69 and 0x9a and 0x99 and the dictionariues with greek letters and FRENCH
 
-# TODO: Autosave feature?
-# TODO: Note about the SoMI bugs that were "fixed" by changing the classic version (and a how-to). This could be integrated in the interface also (produce the text required in the classic version for the bug cases (lens, The Sea Monkey, 173 piece of eight or sth)
+#v4.97
+### DONE: BUGFIX: There is a nasty case at least in MONKEY ISLAND 2, where a hint-group in english won't have as many hints as in other languages. EG: hint starting "Now you should be able to check out Largo's room" has 2 hints. But french has 3! (look indexes addr 0xD4D0 VS 0xD4E0)
+###       FIXED: We present a verbose version of the hints (even the empty slots!)
+
+#v4.96
+### [Reverted] Attempt to integrate pyenchant module (bad portability).
+### [UI] Added shortcuts to navigate upwards or downwards while in edit mode. Shift+Enter (or Return) for downwards and Ctrl+Shift+Enter (or Return) for upwards. No wrapping i.e. reaching the bottom row moving downwards or the top row moving upwards will not wrap around the quotes.
 
 
 #v 4.95
