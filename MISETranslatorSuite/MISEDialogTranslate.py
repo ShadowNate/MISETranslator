@@ -542,7 +542,16 @@ class MyMainWindow(QtGui.QMainWindow):
         # on virtual desktops this always returns 1!!
         #print "parent screen num", QtGui.QApplication.desktop().screenNumber(parentScreen)
         is_virtual_desktop = QtGui.QApplication.desktop().isVirtualDesktop()  # bool
-        screenCount =  QtGui.QApplication.desktop().screenCount()
+        # <scx>
+        #screenCount =  QtGui.QApplication.desktop().screenCount()
+        screenCount = 1
+        if hasattr(QtGui.QApplication.desktop(), 'screenCount'):
+            screenCount =  QtGui.QApplication.desktop().screenCount()
+        elif hasattr(QtGui.QApplication.desktop(), 'numScreens'):
+           screenCount =  QtGui.QApplication.desktop().numScreens
+        else:
+            print "error #0"
+        # </scx>
         primaryScreenNum =  QtGui.QApplication.desktop().primaryScreen()
         top_left = QtGui.QApplication.desktop().screenGeometry(QtGui.QApplication.desktop().primaryScreen()).topLeft() #QPoint
         bottom_left = QtGui.QApplication.desktop().screenGeometry(QtGui.QApplication.desktop().primaryScreen()).bottomLeft() #QPoint
@@ -1154,7 +1163,15 @@ class MyMainWindow(QtGui.QMainWindow):
                 for rowi in range(0,pPlithosOfQuotes):
                     index =  self.quoteTableView.model().index(rowi, pColumnId, QModelIndex())
                     datoTmp = self.quoteTableView.model().data(index).toPyObject()
-                    myASCIIString = unicode.encode("%s" % datoTmp, 'utf-8')
+                    # <scx>
+                    #myASCIIString = unicode.encode("%s" % datoTmp, 'utf-8')
+                    myASCIIString=""
+                    try:
+                        myASCIIString = unicode.encode("%s" % datoTmp, 'utf-8', 'ignore')
+                    except ValueError:
+                        print "error #1"
+                        print rowi
+                    # </scx>
                     myASCIIString=myASCIIString.replace("\n", "0x0A")
                     tmpOpenFile.write("%s\n" % (myASCIIString))
                     exportedLines +=1
@@ -1747,7 +1764,15 @@ class MyMainWindow(QtGui.QMainWindow):
 ##                    lm.setData(index, unicode("", activeEnc))
                     ##print "uh oh! %d: %s" % (rowi, listOfUntranslatedLinesSpeechInfo[rowi][1])
                     if(rowi < plithosOfUntransQuotes):
-                        lm.setData(index, unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
+                        # <scx>
+                        #lm.setData(index, unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc), Qt.EditRole)
+                        try:
+                            lm.setData(index, unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc, errors='ignore'), Qt.EditRole)
+                        except ValueError:
+                            print "error #2"
+                            print rowi
+                            print listOfUntranslatedLinesSpeechInfo[rowi][1]
+                        # </scx>
                     else:
                         lm.setData(index, unicode("", self.activeEnc), Qt.EditRole)
                 elif columni == 2:
@@ -1767,10 +1792,22 @@ class MyMainWindow(QtGui.QMainWindow):
                     tmpItem.setEditable(False)
 #                    tmpItem.setCheckable(False)
                     tmpItem.setEnabled(False)
-                    if unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc) <> unicode(listOfForeignLinesOrigSpeechInfo[rowi][0], self.activeEnc):
-                        index.model().setData(index, True, Qt.EditRole) # TODO: fill in from saved file (comparisn with original file)
-                    else:
-                        index.model().setData(index, False, Qt.EditRole)
+                    # <scx>
+                    #if unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc) <> unicode(listOfForeignLinesOrigSpeechInfo[rowi][0], self.activeEnc):
+                    #    index.model().setData(index, True, Qt.EditRole) # TODO: fill in from saved file (comparisn with original file)
+                    #else:
+                    #    index.model().setData(index, False, Qt.EditRole)
+                    try:
+                        if unicode(listOfUntranslatedLinesSpeechInfo[rowi][1], self.activeEnc, errors='ignore') <> unicode(listOfForeignLinesOrigSpeechInfo[rowi][0], self.activeEnc, errors='ignore'):
+                            index.model().setData(index, True, Qt.EditRole) # TODO: fill in from saved file (comparisn with original file)
+                        else:
+                            index.model().setData(index, False, Qt.EditRole)
+                    except ValueError:
+                        print "error #3"
+                        print rowi
+                        print listOfUntranslatedLinesSpeechInfo[rowi][1]
+                        print listOfForeignLinesOrigSpeechInfo[rowi][0]
+                    # </scx>
                 elif columni == 4:
                     tmpItem.setEditable(False)
                     tmpItem.setEnabled(False)
@@ -1872,10 +1909,21 @@ class MyMainWindow(QtGui.QMainWindow):
         indexChangedChkbx = item.index().model().index(item.row(), 3, QModelIndex())
         datoTmp = self.quoteTableView.model().data(item.index()).toPyObject()
 
-        if "%s" % (datoTmp) <> unicode(listOfForeignLinesOrigSpeechInfo[item.row()][0], self.activeEnc):
-            indexChangedChkbx.model().setData(indexChangedChkbx, True, Qt.EditRole)
-        else:
-            indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
+        # <scx>
+        #if "%s" % (datoTmp) <> unicode(listOfForeignLinesOrigSpeechInfo[item.row()][0], self.activeEnc):
+        #    indexChangedChkbx.model().setData(indexChangedChkbx, True, Qt.EditRole)
+        #else:
+        #    indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
+        try:
+            if "%s" % (datoTmp) <> unicode(listOfForeignLinesOrigSpeechInfo[item.row()][0], self.activeEnc, errors='ignore'):
+                indexChangedChkbx.model().setData(indexChangedChkbx, True, Qt.EditRole)
+            else:
+                indexChangedChkbx.model().setData(indexChangedChkbx, False, Qt.EditRole)
+        except ValueError:
+            print "error #4"
+            print rowi
+            print listOfForeignLinesOrigSpeechInfo[item.row()][0]
+        # </scx>
 
     #
     # TODO handleColumnsResized introduces lag when resizing columns, due to the connects to the DB.
