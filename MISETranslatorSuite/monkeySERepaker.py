@@ -234,8 +234,14 @@ class pakFile:
                     if parseMode == 2:
                         tmpMI2SEFileEntry = mi2seFileNameOrderList[i1]
                         tmpFileName = self._lstOfFileNames[tmpMI2SEFileEntry._orderInTheOrigFile]
-                    newFixedTmpFileName = replace(tmpFileName, "/" , "\\")
-                    fullpathNewFixedTmpFileName =  rootFolder + '\\' +  newFixedTmpFileName
+                    # <scx>
+                    #newFixedTmpFileName = replace(tmpFileName, "/" , "\\")
+                    #fullpathNewFixedTmpFileName =  rootFolder + '\\' +  newFixedTmpFileName
+                    newFixedTmpFileName = tmpFileName
+                    if os.sep <> "/":
+                        newFixedTmpFileName = replace(tmpFileName, "/" , os.sep)
+                    fullpathNewFixedTmpFileName = os.path.join(rootFolder, newFixedTmpFileName)
+                    # </scx>
                     if not os.path.exists(fullpathNewFixedTmpFileName):
                         print "ERROR! No such file found: %s !" % (fullpathNewFixedTmpFileName)
                         pass

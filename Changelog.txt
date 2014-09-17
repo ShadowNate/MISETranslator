@@ -1,3 +1,7 @@
+v4.99
+--------
+- Fix bug in the repacker tool: use the os.sep as path separator.
+
 v4.98
 --------
 - Add support for EL6.
