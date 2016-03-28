@@ -121,7 +121,7 @@ You can adjust the positioning of a font character within a sentence by explicit
 the columns Indnt (indent: the margin within a letter box, after which the letter begins - it can be a negative value), wid (width: the width of the character), kern (kerning: the margin after the end of the character, where the box for the next letter should begin). 
 
 You can click on the "Preview sentence" button to open the "Preview Sentence" dialogue. By default this dialogue will demonstrate how the original and target language pangrams (sentences that include all letters of the respective
-alphabets) will appear in-game (approximately - as the game sometime treats specific font colour values differently depending on the game-context). You can also add custom sentences to preview their in-game versions.
+alphabets) will appear in-game (approximately - as the game sometimes treats specific font colour values differently depending on the game-context). You can also add custom sentences to preview their in-game versions.
 
 WARNING: the explicit manual changes to font letters positioning MUST be saved by clicking on the "Submit new values" button, under the "Detected Characters" table. 
 
@@ -144,32 +144,16 @@ Copy this file to the game's installation directory and rename it appropriately 
 Keep a backup of the original pak file, just in case.
 
 
-Known Issues
+More Important Info and Known Issues
 ============================================
-- All dialogue translation sessions (connections between original files and their respective active translation files) 
-	keep absolute paths for the involved files. This means that these sessions won't work
-	if the files are moved or the Translator's installation folder is changed.
-	A new session will start if any of the involved files in an stored session has been moved or deleted.
-	You can still import text from a previously extracted (to .txt from the menu option) translation.
-	Additionally, you can load a previous backup or copy of your translation file into a new session 
-	by using the Load Translation in Session (Ctrl+T shortcut).
-- If certain font files are missing for your locale, you may see square symbols instead of your translated text.
-	The Font Crafting tool (accessible via the Translator's menu "Tools" option) is needed for expanding the font file
-	to include specific locale charsets. This tool includes a preview capability, to demonstrate approximately
-	how the changed fonts will work in sentences in-game (indent, spacing, kerning).
-- The Translator tool will produce translations that will replace the French translation for the games. You'll have to
-	set the game's language to French in order to view your custom translation in-game.
-- Spell-checking has not yet been integrated. You will have to extract the translation to a text file, check it separately 
-	and re-import it.
+- All dialogue translation sessions (connections between original files and their respective active translation files) keep absolute paths for the involved files. This means that these sessions won't work if the files are moved or the Translator's installation folder is changed. A new session will start if any of the involved files in a stored session has been moved or deleted. You can still import text from a previously extracted (to .txt from the menu option) translation. Additionally, you can load a previous backup or copy of your translation file into a new session by using the Load Translation in Session (Ctrl+T shortcut).
+- If certain font files are missing for your locale, you may see square symbols instead of your translated text. The Font Crafting tool (accessible via the Translator's menu "Tools" option) is needed for expanding the font file to include specific locale charsets. This tool includes a preview capability, to demonstrate approximately how the changed fonts will work in sentences in-game (indent, spacing, kerning).
+- The Translator tool will produce translations that will replace the French translation for the games. You'll have to set the game's language to French in order to view your custom translation in-game.
+- Spell-checking has not yet been integrated. You will have to extract the translation to a text file, check it separately using an external spell-checker tool (eg Notepad++ has a Spell-Checker plugin) and re-import it.
 - For the Dialogue Translator no auto-save feature is implemented. You need to click on the Submit button to save any changes or any imports from extracted files.
-- Certain special characters will appear as 0x## (where ## is a hex 2-digit number) within the text. You can remove them if deemed 
-	necessary (usually it is apparent whether the special character can be omitted; most of the special characters that are
-	also in the English translation are to be kept).
-- The extracted text files may include a 0x0A special character in addition to the special characters shown in the tool's GUI.
-	This 0x0A indicates a "new line" within a quote and should NOT be removed from the extracted text file. 
-- For the Font Crafting tool the Calculate and Recalculate both will auto-save the changes (overwriting your previous target copies) 
-	and prompt to overwrite an existing session (if one was active/loaded). Clicking these buttons will also overwrite any explicit manual 
-	changes made in the indent, spacing, kerning of the font characters (via the table on the right).
+- Certain special characters will appear as 0x## (where ## is a hex 2-digit number) within the text. You can remove them if deemed necessary (usually it is apparent whether the special character can be omitted; most of the special characters that are also in the English translation are to be kept).
+- The extracted text files may include a 0x0A special character in addition to the special characters shown in the tool's GUI. This 0x0A indicates a "new line" within a quote and should NOT be removed from the extracted text file. 
+- For the Font Crafting tool the Calculate and Recalculate both will auto-save the changes (overwriting your previous target copies) and prompt to overwrite an existing session (if one was active/loaded). Clicking these buttons will also overwrite any explicit manual changes made in the indent, spacing, kerning of the font characters (via the table on the right).
 
 
 Special Thanks
