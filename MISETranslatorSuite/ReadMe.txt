@@ -61,7 +61,7 @@ You should open the fr.uitext.info for translation, and when you press the Submi
 a dialogue prompt will ask you about re-ordering the library, as well. If you choose YES, 
 then a monkey2.001-copy file will be created in the same path as fr.uitext.info. 
 You should copy this file to the game's installation folder (into subfolder classic/en). 
-Create this subfolders if they don't exist). Rename the file from "monkey2.001-copy" to "monkey2.001".
+Please, create these subfolders if they don't exist. Rename the file from "monkey2.001-copy" to "monkey2.001".
 
 Note that the following cards for books: 
 - "Treasure - Big Whoop: Unclaimed Bonanza or Myth?", 
@@ -72,13 +72,11 @@ can't be moved (must maintain their ids, which are identical to their placement 
 So you will have to come up with some translation tricks to make them fit in the lexical order. 
 Also, note that some of these have "Reference cards" to them, so their translation should be adjusted as well, to keep consistency. 
 
-Finally, note typically you should start from a saved game before having acquired any books from the library.
+Finally, note that typically you should start from a saved game before having acquired any books from the library.
 
-If you restore a saved game where you have books from the library, their description will be possibly wrong. 
-The way to clear this up, would be to return them all to the librarian, and re-acquire them via the 
-library card system of the library. To "clear-up" the Pirate Quotation's book, you would (probably) 
-have to go back to the Phatt governor's mansion and re-switch the books (twice, once to get the book back 
-on the governor and twice to get it back). (Returning it to the library and re-acquiring it would work as well - I think).
+If you restore a saved game from a point where you have books from the library, their description will possibly be wrong. The way to clear this up, would be to return them all to the librarian and re-acquire them via the 
+library card system of the library. As a special case, to "clear-up" the Pirate Quotation's book, you would (probably) 
+have to go back to the Phatt governor's mansion and re-switch the books (twice, the first time would be to get the book back on the governor and the second time would be for you to take it back). (Returning it to the library and re-acquiring it would work as well - I think).
 
 
 Overriding the default encoding
@@ -146,7 +144,7 @@ Keep a backup of the original pak file, just in case.
 More Important Info and Known Issues
 ============================================
 - All dialogue translation sessions (connections between original files and their respective active translation files) keep absolute paths for the involved files. This means that these sessions won't work if the files are moved or the Translator's installation folder is changed. A new session will start if any of the involved files in a stored session has been moved or deleted. You can still import text from a previously extracted (to .txt from the menu option) translation. Additionally, you can load a previous backup or copy of your translation file into a new session by using the Load Translation in Session (Ctrl+T shortcut).
-- If certain font files are missing for your locale, you may see square symbols instead of your translated text. The Font Crafting tool (accessible via the Translator's menu "Tools" option) is needed for expanding the font file to include specific locale charsets. This tool includes a preview capability, to demonstrate approximately how the changed fonts will work in sentences in-game (indent, spacing, kerning).
+- If certain font files are missing for your locale, you may see square symbols in-game instead of your translated text. The Font Crafting tool (accessible via the Translator's menu "Tools" option) is needed for expanding the font file to include specific locale charsets. This tool includes a preview capability, to demonstrate approximately how the changed fonts will work in sentences in-game (indent, spacing, kerning).
 - The Translator tool will produce translations that will replace the French translation for the games. You'll have to set the game's language to French in order to view your custom translation in-game.
 - Spell-checking has not yet been integrated. You will have to extract the translation to a text file, check it separately using an external spell-checker tool (eg Notepad++ has a Spell-Checker plugin) and re-import it.
 - For the Dialogue Translator no auto-save feature is implemented. You need to click on the Submit button to save any changes or any imports from extracted files.
